@@ -154,6 +154,16 @@ struct GeneralSettings: View {
                 Text("macOS can't reserve the bottom of the screen, so Superbar moves or trims windows that reach under it, like zoomed windows. This needs Accessibility. Hiding the Dock keeps the bottom edge for Superbar.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section {
+                ForEach(TrayIcon.allCases) { icon in
+                    Toggle(icon.title, isOn: Binding(get: { settings.shows(icon) }, set: { settings.setShows(icon, $0) }))
+                }
+            } header: {
+                Text("System tray")
+            } footer: {
+                Text("The icons left of the clock. The clock always shows. Battery appears only on a Mac with a battery.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Start menu") {
                 LabeledContent("Shortcut") {
                     ShortcutRecorder(combo: $settings.startHotkey)

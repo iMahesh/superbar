@@ -3,6 +3,20 @@ import Observation
 import ServiceManagement
 import SuperbarKit
 
+/// The icons left of the clock. Any of them can be hidden in Settings.
+enum TrayIcon: String, CaseIterable, Identifiable {
+    case trash, network, sound, battery
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .trash: "Trash"
+        case .network: "Wi-Fi"
+        case .sound: "Sound"
+        case .battery: "Battery"
+        }
+    }
+}
+
 enum BarSize: String, CaseIterable, Identifiable {
     case small, normal
     var id: String { rawValue }
@@ -50,6 +64,17 @@ final class AppSettings {
         }
     }
 
+    /// Tray icons the user turned off. Stored as the ones hidden, so a new icon shows by default.
+    var hiddenTrayIcons: Set<TrayIcon> {
+        didSet { defaults.set(hiddenTrayIcons.map(\.rawValue).sorted(), forKey: Store.Key.hiddenTrayIcons) }
+    }
+
+    func shows(_ icon: TrayIcon) -> Bool { !hiddenTrayIcons.contains(icon) }
+
+    func setShows(_ icon: TrayIcon, _ on: Bool) {
+        if on { hiddenTrayIcons.remove(icon) } else { hiddenTrayIcons.insert(icon) }
+    }
+
     var startHotkey: KeyCombo {
         didSet {
             if let data = try? JSONEncoder().encode(startHotkey) { defaults.set(data, forKey: Store.Key.startHotkey) }
@@ -66,6 +91,7 @@ final class AppSettings {
     init() {
         barSize = BarSize(rawValue: defaults.string(forKey: Store.Key.barSize) ?? "") ?? .normal
         keepWindowsAbove = defaults.object(forKey: Store.Key.keepWindowsAbove) as? Bool ?? true
+        hiddenTrayIcons = Set((defaults.stringArray(forKey: Store.Key.hiddenTrayIcons) ?? []).compactMap(TrayIcon.init))
         startHotkey = defaults.data(forKey: Store.Key.startHotkey)
             .flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) } ?? .startDefault
     }

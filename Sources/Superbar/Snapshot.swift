@@ -83,7 +83,7 @@ enum Snapshot {
 
                 if wanted("calendar") {
                     app.calendar.open()
-                    await shot("calendar", popover(app))
+                    await shot("calendar", app.calendar.panelForSnapshot)
                     app.calendar.close()
                 }
 
@@ -142,7 +142,9 @@ enum Snapshot {
     }
 
     private static func popover(_ app: AppDelegate) -> NSWindow? {
-        NSApp.windows.first { $0.isVisible && $0 is GlassPanel && $0 !== app.bar && !$0.canBecomeKey }
+        // Not a bar (there is one per display) and not the Start menu, which can take focus.
+        let bars = Set(app.bars.map { ObjectIdentifier($0.panel) })
+        return NSApp.windows.first { $0.isVisible && $0 is GlassPanel && !bars.contains(ObjectIdentifier($0)) && $0 !== app.startMenu.panelForSnapshot }
     }
 
     /// Captures the real window with screencapture, so glass looks as on screen. That needs

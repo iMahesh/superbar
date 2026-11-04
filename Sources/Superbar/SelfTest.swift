@@ -182,6 +182,30 @@ enum SelfTest {
             let trash = FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).first
             check("the Trash folder resolves for the Trash button", trash?.lastPathComponent == ".Trash", trash?.path ?? "nil")
 
+            // S-024: tray icons can be hidden in Settings.
+            if let content = app.bar.contentView {
+                @MainActor func trayCount() -> Int {
+                    @MainActor func catchers(_ v: NSView) -> [NSView] { (v is MouseCatcher.CatcherView ? [v] : []) + v.subviews.flatMap(catchers) }
+                    return catchers(content).filter { $0.frame.width < app.settings.metrics.buttonWidth }.count
+                }
+                let before = trayCount()
+                app.settings.setShows(.sound, false)
+                app.settings.setShows(.trash, false)
+                try? await Task.sleep(for: .milliseconds(300))
+                let hidden = trayCount()
+                app.settings.setShows(.sound, true)
+                app.settings.setShows(.trash, true)
+                try? await Task.sleep(for: .milliseconds(300))
+                check("hiding tray icons in Settings removes them, and showing brings them back",
+                      hidden == before - 2 && trayCount() == before, "\(before) → \(hidden) → \(trayCount())")
+            }
+
+            // S-025: the calendar can take typing in its date field.
+            app.calendar.open()
+            try? await Task.sleep(for: .milliseconds(300))
+            check("the calendar opens and its date field can take typing", app.calendar.isOpen && NSApp.keyWindow is GlassPanel)
+            app.calendar.close()
+
             // App icon
             check("the app has its icon", Bundle.main.url(forResource: "AppIcon", withExtension: "icns") != nil)
 

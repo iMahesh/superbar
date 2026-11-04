@@ -148,6 +148,7 @@ final class StartMenuModel {
 final class StartMenuController {
     let model: StartMenuModel
     private var panel: GlassPanel?
+    var panelForSnapshot: NSWindow? { panel }
     private let settings: AppSettings
     static let size = NSSize(width: 460, height: 540)
 

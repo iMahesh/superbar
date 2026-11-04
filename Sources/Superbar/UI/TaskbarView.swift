@@ -24,7 +24,7 @@ struct TaskbarView: View {
                 MissionControlButton(metrics: m) { model.openMissionControl() }
                 AppStrip(model: model, metrics: m, barID: barID, interactive: interactive)
                 Spacer(minLength: Space.sm)
-                TrayView(model: model, tray: tray, metrics: m, interactive: interactive)
+                TrayView(model: model, tray: tray, settings: settings, metrics: m, interactive: interactive)
                 ClockView(tray: tray, metrics: m) { model.onToggleCalendar() }
                 ShowDesktopStrip(width: m.showDesktopWidth, isOn: model.showDesktopOn) { model.toggleShowDesktop() }
             }
@@ -238,19 +238,26 @@ struct Spark: Shape {
 private struct TrayView: View {
     let model: TaskbarModel
     let tray: TrayModel
+    let settings: AppSettings
     let metrics: BarMetrics
     let interactive: Bool
 
     var body: some View {
         HStack(spacing: Space.xs) {
             // Trash: with the Dock hidden, the bar is the way to it.
-            TrayButton(symbol: "trash", help: "Trash", width: 28, metrics: metrics,
-                       interactive: interactive) { _ in model.openTrash() }
-            TrayButton(symbol: tray.networkSymbol, help: tray.networkHelp, width: 28, metrics: metrics,
-                       interactive: interactive) { model.onTrayClick(.network, $0) }
-            TrayButton(symbol: tray.volumeSymbol, help: tray.volumeHelp, width: 28, metrics: metrics,
-                       interactive: interactive) { model.onTrayClick(.sound, $0) }
-            if let symbol = tray.batterySymbol, let battery = tray.battery {
+            if settings.shows(.trash) {
+                TrayButton(symbol: "trash", help: "Trash", width: 28, metrics: metrics,
+                           interactive: interactive) { _ in model.openTrash() }
+            }
+            if settings.shows(.network) {
+                TrayButton(symbol: tray.networkSymbol, help: tray.networkHelp, width: 28, metrics: metrics,
+                           interactive: interactive) { model.onTrayClick(.network, $0) }
+            }
+            if settings.shows(.sound) {
+                TrayButton(symbol: tray.volumeSymbol, help: tray.volumeHelp, width: 28, metrics: metrics,
+                           interactive: interactive) { model.onTrayClick(.sound, $0) }
+            }
+            if settings.shows(.battery), let symbol = tray.batterySymbol, let battery = tray.battery {
                 TrayButton(symbol: symbol, help: "Battery \(battery.percent)%\(battery.charging ? ", charging" : "")",
                            width: 32, metrics: metrics, interactive: interactive) { model.onTrayClick(.battery, $0) }
             }

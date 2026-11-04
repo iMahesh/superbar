@@ -154,6 +154,23 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-025 Calendar: every weekday, Today, and any date
+As the user, the calendar shows all seven weekday letters, lets me pick or type any past or future date, and has Today to come back.
+Depends: S-009
+Acceptance:
+- [snap] The weekday row shows S M T W T F S (Thursday and Saturday were missing: the letters were used as their own IDs, so the repeated T and S were dropped).
+- [self-test] The calendar opens and can take typing in its date field.
+- [manual] Typing or stepping a date in the field shows its month with that day ringed; clicking a day picks it; Today comes back to today and is greyed out while today is showing; each open starts at today.
+Status: built
+
+### S-024 Show or hide tray icons
+As the user, I turn tray icons on or off in Settings.
+Depends: S-007, S-023
+Acceptance:
+- [self-test] Hiding two icons in Settings removes them from the bar, and turning them back on restores them.
+- [snap] Settings has a System tray section with Trash, Wi-Fi, Sound, and Battery.
+Status: built
+
 ### S-023 Trash on the bar
 As the user with the Dock hidden, I click the Trash icon left of the tray and Finder opens my Trash.
 Depends: S-007

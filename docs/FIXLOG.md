@@ -32,3 +32,12 @@
 - Symptom: "Superbar Settings…" from the bar menu sometimes left the window behind the app in front, so it looked like nothing happened.
 - Cause: Superbar is an accessory app (no Dock icon). Since macOS 14 `NSApp.activate()` is only a request, and for an accessory app started from a non-activating panel it is often refused.
 - Fix: while Settings is open Superbar becomes a regular app (`setActivationPolicy(.regular)`), and `show()` also asks the window server to front the window (`Private.bringToFront`). It goes back to accessory when Settings closes.
+
+## The calendar dropped Thursday and Saturday (2026-11-04)
+- Symptom: the weekday row showed S M T W F, with no second T or S.
+- Cause: `ForEach(weekdaySymbols, id: \.self)` used each letter as its ID; the repeated "T" and "S" counted as duplicates.
+- Fix: identify the letters by position (`enumerated()`, `id: \.offset`).
+
+## The calendar snapshot showed a bar (2026-11-04)
+- Cause: snapshots found popovers as "a glass panel that can't take focus, other than the bar". With a bar per display, and the calendar now able to take focus, that matched the second display's bar.
+- Fix: snapshots take the calendar's own panel, and skip every bar and the Start menu when looking for a popover.
