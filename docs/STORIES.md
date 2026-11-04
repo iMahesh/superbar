@@ -1,3 +1,7 @@
+Status key: `built` means the code is in and every [unit] and [snap] line passes
+(tools/test.sh, tools/selftest.sh, tools/snap.sh). A story becomes `done` once its
+[manual] lines are tried by hand with Accessibility and Screen Recording granted.
+
 ## M1 Core loop
 
 ### S-001 Show the taskbar

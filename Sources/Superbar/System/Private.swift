@@ -24,6 +24,15 @@ nonisolated enum Private {
     private static let axGetWindow = symbol("_AXUIElementGetWindow", as: AXGetWindow.self)
     private static let coreDockSend = symbol("CoreDockSendNotification", as: CoreDockSendNotification.self)
 
+    /// Private calls this macOS lacks, for the self-test. Each falls back, but less well.
+    static var missing: [String] {
+        [("GetProcessForPID", getProcessForPID != nil),
+         ("_SLPSSetFrontProcessWithOptions", setFrontProcess != nil),
+         ("SLPSPostEventRecordTo", postEventRecordTo != nil),
+         ("_AXUIElementGetWindow", axGetWindow != nil),
+         ("CoreDockSendNotification", coreDockSend != nil)].filter { !$0.1 }.map(\.0)
+    }
+
     /// The CGWindowID behind an AX window, or nil.
     static func windowID(of element: AXUIElement) -> CGWindowID? {
         guard let axGetWindow else { return nil }

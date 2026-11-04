@@ -177,14 +177,42 @@ final class StartMenuController {
         panel.setFrame(NSRect(origin: origin, size: Self.size), display: true)
         panel.orderFrontRegardless()
         panel.makeKey()
-        if let field = model.field { panel.makeFirstResponder(field) }
+        // On the first open the field is made during layout, after this call returns,
+        // and a cold launch can take a few frames. Try until it has focus, up to 0.5 s.
+        focusField(panel)
+        Task { [weak self] in
+            for _ in 0..<10 {
+                guard let self, self.isOpen, !self.searchHasFocus else { return }
+                try? await Task.sleep(for: .milliseconds(50))
+                self.focusField(panel)
+            }
+        }
+        // A click in another app closes the menu. Clicks on the bar run their own action,
+        // which closes it too (TaskbarModel.onCloseTransient).
+        if monitor == nil {
+            monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { _ in
+                MainActor.assumeIsolated { [weak self] in self?.close() }
+            }
+        }
+    }
+
+    /// True when typing goes to the search field.
+    var searchHasFocus: Bool { model.field?.currentEditor() != nil && panel?.isKeyWindow == true }
+
+    private func focusField(_ panel: GlassPanel) {
+        guard let field = model.field, field.currentEditor() == nil else { return }
+        panel.makeFirstResponder(field)
     }
 
     func close() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
         guard let panel, panel.isVisible else { return }
         panel.orderOut(nil)
         model.query = ""
     }
+
+    private var monitor: Any?
 
     private func makePanel() -> GlassPanel {
         if let panel { return panel }

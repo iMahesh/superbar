@@ -32,6 +32,25 @@ enum SelfTest {
                   app.bar.frame.minY == NSScreen.screens.first?.frame.minY && app.bar.frame.width == NSScreen.screens.first?.frame.width)
             check("the bar is 40 pt tall", app.bar.frame.height == 40)
             check("the bar cannot take focus", !app.bar.canBecomeKey)
+            check("the private focus and show-desktop calls exist", Private.missing.isEmpty, Private.missing.joined(separator: ", "))
+
+            // Which view a click lands on: SwiftUI for the orb and clock, a button's own
+            // mouse view for an app, and the bar's mouse view (its right-click menu) on empty space.
+            if let content = app.bar.contentView {
+                let m = app.settings.metrics
+                let y = m.height / 2
+                @MainActor func hit(_ x: CGFloat) -> NSView? { content.hitTest(NSPoint(x: x, y: y)) }
+                let orb = hit(Space.xs + m.orb / 2)
+                check("a click on the orb reaches the orb", !(orb is MouseCatcher.CatcherView), "\(type(of: orb))")
+                let button = hit(m.orb + Space.xs * 2 + m.buttonWidth / 2)
+                check("a click on the first app reaches its button",
+                      button is MouseCatcher.CatcherView && button?.frame.width == m.buttonWidth, "\(type(of: button)) \(button?.frame.width ?? 0)")
+                let empty = hit(content.bounds.width * 0.6)
+                check("a right click on empty bar space reaches the bar menu",
+                      empty is MouseCatcher.CatcherView && empty?.frame.width == content.bounds.width, "\(type(of: empty)) \(empty?.frame.width ?? 0)")
+                let clock = hit(content.bounds.width - m.showDesktopWidth - 30)
+                check("a click on the clock reaches the clock", !(clock is MouseCatcher.CatcherView), "\(type(of: clock))")
+            }
 
             // S-004
             model.pin("com.apple.TextEdit")
@@ -54,6 +73,8 @@ enum SelfTest {
             app.startMenu.open()
             try? await Task.sleep(for: .seconds(0.3))
             check("the Start menu opens and takes keys", app.startMenu.isOpen && NSApp.keyWindow is GlassPanel)
+            check("typing goes to the search field", app.startMenu.searchHasFocus,
+                  "field \(app.startMenu.model.field == nil ? "missing" : "exists"), first responder \(NSApp.keyWindow?.firstResponder.map { String(describing: type(of: $0)) } ?? "none")")
             app.startMenu.toggle()
             check("pressing the Start shortcut again closes it", !app.startMenu.isOpen)
 

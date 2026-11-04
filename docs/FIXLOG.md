@@ -1,0 +1,12 @@
+# Fix log
+
+## Start menu opened without focus in the search field
+- Symptom: the Start menu opened and took keys, but typing went nowhere. Seen once in the self-test, on the first run after a fresh install.
+- Cause: on the first open the search field is created during SwiftUI layout, after `open()` returned, so `makeFirstResponder` had no field. One async retry was sometimes still too early on a cold launch.
+- Fix: retry focusing every 50 ms until the field has an editor, up to 0.5 s. The self-test checks "typing goes to the search field".
+- Rule: never assume an NSViewRepresentable's view exists right after its panel is ordered front; retry until it does, and test it.
+
+## Start menu could stay open after a click in another app
+- Symptom: closing on an outside click relied only on the panel losing key, which a non-activating panel does not always do.
+- Fix: a global mouse-down monitor closes the menu while it is open, as the calendar does.
+- Rule: every transient panel closes on a global mouse-down monitor, not on resignKey alone.
