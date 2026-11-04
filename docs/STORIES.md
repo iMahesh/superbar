@@ -127,6 +127,9 @@ Acceptance:
 - [manual] Changing volume with the keyboard updates the icon within a second.
 - [manual] Turning Wi-Fi off shows the offline icon.
 - [snap] A Mac with no battery shows no battery icon.
+- [self-test] Each tray icon is its own clickable view and opens its popover; a second click closes it. The volume slider sets the volume.
+- [snap] tray-network, tray-sound, and tray-battery popovers.
+- [manual] Dragging the slider changes the volume; the Wi-Fi switch turns Wi-Fi off and on.
 Status: built
 
 ### S-014 Show desktop

@@ -83,7 +83,20 @@ struct GeneralSettings: View {
 
     var body: some View {
         Form {
-            Section("Taskbar") {
+            Section {
+                HStack(spacing: Space.md) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 48, height: 48)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Superbar").font(.title3.weight(.semibold))
+                        Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Section("Layout") {
                 Picker("Size", selection: $settings.barSize) {
                     ForEach(BarSize.allCases) { Text($0.title).tag($0) }
                 }
@@ -103,7 +116,7 @@ struct GeneralSettings: View {
             } header: {
                 Text("Dock")
             } footer: {
-                Text("macOS can't reserve the bottom of the screen, so zoomed windows reach under the bar. Hiding the Dock keeps the bottom edge for Superbar.")
+                Text("macOS can't reserve the bottom of the screen, so zoomed windows reach under Superbar. Hiding the Dock keeps the bottom edge for Superbar.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Start menu") {

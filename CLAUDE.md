@@ -32,6 +32,8 @@ behaviors, and gotchas `docs/SPEC.md`. Read SPEC.md before changing behavior.
 
 - The look is Aero-style glass, not Liquid Glass: `GlassPanel` (HUD blur), `Glass.tint`, `Glass.highlight`. Spacing from `Space` in `UI/Grid.swift`.
 - Never use Microsoft's name, logo, or sounds. The orb glyph (`Spark`) is original.
+- Every word the app shows calls it "Superbar", never "taskbar". Type names like `TaskbarModel` are code only.
+- The app icon is `AppIconArt` (`UI/AppIconArt.swift`), sharing `OrbArt` with the Start button. `build.sh` re-renders `Resources/AppIcon.icns` through `tools/make_flat_icon.sh` when that drawing changes and actool is missing. Keep `Icon/AppIcon.icon` (for Xcode builds) in step with it.
 - AX and SkyLight calls run off the main thread (`@concurrent` in `WindowActions`, `AXReader`, `AXObserverHost`). Never call AX on the main actor.
 - The bar and popovers never become key. Only the Start panel does.
 - Never change the Dock's defaults without the confirmation in `DockController.requestHide()`.

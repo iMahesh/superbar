@@ -47,7 +47,17 @@ if [[ -d "$here/Icon/AppIcon.icon" ]] && xcrun -f actool >/dev/null 2>&1; then
     "$here/tools/make_icon.sh"
   fi
   cp -X "$car" "$here/Resources/AppIcon.icns" "$app/Contents/Resources/"
+else
+  # No actool: a flat AppIcon.icns drawn by the app itself (tools/make_flat_icon.sh).
+  icns="$here/Resources/AppIcon.icns"
+  if [[ ! -f "$icns" || "$here/Sources/Superbar/UI/AppIconArt.swift" -nt "$icns" || "$here/Sources/Superbar/UI/TaskbarView.swift" -nt "$icns" ]]; then
+    "$here/tools/make_flat_icon.sh" "$bin"
+  fi
+  cp -X "$icns" "$app/Contents/Resources/"
+  # CFBundleIconName points at Assets.car, which only actool makes. Without it, use the .icns.
+  plutil -remove CFBundleIconName "$app/Contents/Info.plist" 2>/dev/null || true
 fi
+touch "$app"   # Finder and Launch Services pick up a changed icon
 xattr -cr "$app"
 codesign --force --sign "$identity" "$app" 2>&1 | grep -v "replacing existing signature" || true
 echo "installed $app (signed: ${identity})"

@@ -21,7 +21,7 @@ struct TaskbarView: View {
                     .padding(.horizontal, Space.xs)
                 AppStrip(model: model, metrics: m, interactive: interactive)
                 Spacer(minLength: Space.sm)
-                TrayView(tray: tray, metrics: m)
+                TrayView(model: model, tray: tray, metrics: m, interactive: interactive)
                 ClockView(tray: tray, metrics: m) { model.onToggleCalendar() }
                 ShowDesktopStrip(width: m.showDesktopWidth, isOn: model.showDesktopOn) { model.toggleShowDesktop() }
             }
@@ -137,14 +137,32 @@ struct StartOrb: View {
     @State private var hovered = false
 
     var body: some View {
+        OrbArt(size: size)
+            .brightness(hovered ? 0.12 : 0)
+            .shadow(color: Color(red: 0.3, green: 0.75, blue: 1).opacity(hovered ? 0.9 : 0), radius: 6)
+            .contentShape(Circle())
+            .onHover { hovered = $0 }
+            .onTapGesture(perform: action)
+            .accessibilityElement()
+            .accessibilityLabel("Start")
+            .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// The orb's drawing, shared by the Start button and the app icon.
+struct OrbArt: View {
+    let size: CGFloat
+
+    var body: some View {
+        let line = max(1, size / 40)
         ZStack {
             Circle()
                 .fill(RadialGradient(colors: [Color(red: 0.55, green: 0.85, blue: 1.0),
                                               Color(red: 0.12, green: 0.45, blue: 0.88),
                                               Color(red: 0.03, green: 0.18, blue: 0.48)],
                                      center: UnitPoint(x: 0.5, y: 0.85), startRadius: 0, endRadius: size * 0.62))
-            Circle().strokeBorder(Color(red: 0.02, green: 0.10, blue: 0.28), lineWidth: 1)
-            Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1).padding(1)
+            Circle().strokeBorder(Color(red: 0.02, green: 0.10, blue: 0.28), lineWidth: line)
+            Circle().strokeBorder(.white.opacity(0.35), lineWidth: line).padding(line)
             // Gloss on the upper half.
             Ellipse()
                 .fill(LinearGradient(colors: [.white.opacity(0.75), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom))
@@ -152,18 +170,10 @@ struct StartOrb: View {
                 .offset(y: -size * 0.2)  // grid: ok gloss scales with the orb
             Spark()
                 .fill(.white)
-                .shadow(color: Color(red: 0.4, green: 0.8, blue: 1).opacity(0.9), radius: 3)
+                .shadow(color: Color(red: 0.4, green: 0.8, blue: 1).opacity(0.9), radius: size * 0.075)
                 .frame(width: size * 0.42, height: size * 0.42)
         }
         .frame(width: size, height: size)
-        .brightness(hovered ? 0.12 : 0)
-        .shadow(color: Color(red: 0.3, green: 0.75, blue: 1).opacity(hovered ? 0.9 : 0), radius: 6)
-        .contentShape(Circle())
-        .onHover { hovered = $0 }
-        .onTapGesture(perform: action)
-        .accessibilityElement()
-        .accessibilityLabel("Start")
-        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -190,21 +200,53 @@ struct Spark: Shape {
 // MARK: Tray and clock
 
 private struct TrayView: View {
+    let model: TaskbarModel
     let tray: TrayModel
     let metrics: BarMetrics
+    let interactive: Bool
 
     var body: some View {
-        HStack(spacing: Space.md) {
-            Image(systemName: tray.networkSymbol).help(tray.networkHelp)
-            Image(systemName: tray.volumeSymbol).help(tray.volumeHelp)
-                .frame(width: 20, alignment: .leading)
+        HStack(spacing: Space.xs) {
+            TrayButton(symbol: tray.networkSymbol, help: tray.networkHelp, width: 28, metrics: metrics,
+                       interactive: interactive) { model.onTrayClick(.network, $0) }
+            TrayButton(symbol: tray.volumeSymbol, help: tray.volumeHelp, width: 28, metrics: metrics,
+                       interactive: interactive) { model.onTrayClick(.sound, $0) }
             if let symbol = tray.batterySymbol, let battery = tray.battery {
-                Image(systemName: symbol).help("Battery \(battery.percent)%\(battery.charging ? ", charging" : "")")
+                TrayButton(symbol: symbol, help: "Battery \(battery.percent)%\(battery.charging ? ", charging" : "")",
+                           width: 32, metrics: metrics, interactive: interactive) { model.onTrayClick(.battery, $0) }
             }
         }
-        .font(.system(size: metrics.clockFont + 1))
-        .foregroundStyle(.primary)
-        .padding(.horizontal, Space.sm)
+        .padding(.horizontal, Space.xs)
+    }
+}
+
+/// A tray icon that opens its popover. The AppKit mouse view gives the icon's screen rect.
+private struct TrayButton: View {
+    let symbol: String
+    let help: String
+    let width: CGFloat
+    let metrics: BarMetrics
+    let interactive: Bool
+    let action: (NSRect) -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: metrics.clockFont + 1))
+            .foregroundStyle(.primary)
+            .frame(width: width, height: metrics.height - Space.sm)
+            .background(RoundedRectangle(cornerRadius: 4).fill(.white.opacity(hovered ? 0.14 : 0)))
+            .overlay {
+                if interactive {
+                    MouseCatcher(handlers: .init(
+                        click: { _, _, rect in action(rect) },
+                        hover: { inside, _ in hovered = inside }))
+                }
+            }
+            .help(help)
+            .accessibilityElement()
+            .accessibilityLabel(help)
+            .accessibilityAddTraits(.isButton)
     }
 }
 

@@ -1,5 +1,6 @@
 import AppKit
 import CoreAudio
+import CoreWLAN
 import IOKit.ps
 import Network
 import Observation
@@ -9,13 +10,24 @@ import SuperbarKit
 @Observable
 final class TrayModel {
     enum NetworkState { case wifi, wired, other, offline }
-    struct Battery: Equatable { var percent: Int; var charging: Bool; var onPower: Bool }
+    struct Battery: Equatable {
+        var percent: Int
+        var charging: Bool
+        var onPower: Bool
+        /// Minutes to empty on battery, or to full while charging. Nil while macOS is still estimating.
+        var minutesLeft: Int? = nil
+    }
 
     private(set) var now = Date()
     private(set) var volume: Float?
     private(set) var muted = false
     private(set) var network: NetworkState = .other
     private(set) var battery: Battery?
+    /// Nil on a Mac without Wi-Fi.
+    private(set) var wifiOn: Bool?
+    /// The network name. macOS hides it from apps without Location access, so often nil.
+    private(set) var wifiName: String?
+    private(set) var volumeSettable = false
     /// When the clock redraws next: the start of the next minute.
     private(set) var nextTick = Date()
 
@@ -29,6 +41,7 @@ final class TrayModel {
 
     func start() {
         Self.current = self
+        readWiFi()
         tick()
         NotificationCenter.default.addObserver(forName: .NSSystemClockDidChange, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { TrayModel.current?.tick() }
@@ -72,7 +85,10 @@ final class TrayModel {
             else if path.usesInterfaceType(.wifi) { state = .wifi }
             else if path.usesInterfaceType(.wiredEthernet) { state = .wired }
             else { state = .other }
-            Task { @MainActor in TrayModel.current?.network = state }
+            Task { @MainActor in
+                TrayModel.current?.network = state
+                TrayModel.current?.readWiFi()
+            }
         }
         monitor.start(queue: DispatchQueue(label: "superbar.network"))
         self.monitor = monitor
@@ -99,9 +115,12 @@ final class TrayModel {
                   desc[kIOPSTypeKey] as? String == kIOPSInternalBatteryType else { continue }
             let current = desc[kIOPSCurrentCapacityKey] as? Int ?? 0
             let max = desc[kIOPSMaxCapacityKey] as? Int ?? 100
+            let charging = desc[kIOPSIsChargingKey] as? Bool ?? false
+            let minutes = desc[charging ? kIOPSTimeToFullChargeKey : kIOPSTimeToEmptyKey] as? Int
             let value = Battery(percent: max > 0 ? current * 100 / max : current,
-                                charging: desc[kIOPSIsChargingKey] as? Bool ?? false,
-                                onPower: desc[kIOPSPowerSourceStateKey] as? String == kIOPSACPowerValue)
+                                charging: charging,
+                                onPower: desc[kIOPSPowerSourceStateKey] as? String == kIOPSACPowerValue,
+                                minutesLeft: (minutes ?? -1) > 0 ? minutes : nil)
             if value != battery { battery = value }
             return
         }
@@ -159,10 +178,78 @@ final class TrayModel {
         var size = UInt32(MemoryLayout<Float32>.size)
         volume = AudioObjectGetPropertyData(volumeDevice, &address, 0, nil, &size, &value) == noErr ? value : nil
 
+        var settable: DarwinBoolean = false
+        volumeSettable = AudioObjectIsPropertySettable(volumeDevice, &address, &settable) == noErr && settable.boolValue
+
         address.mSelector = kAudioDevicePropertyMute
         var mute = UInt32(0)
         size = UInt32(MemoryLayout<UInt32>.size)
         muted = AudioObjectGetPropertyData(volumeDevice, &address, 0, nil, &size, &mute) == noErr && mute != 0
+    }
+
+    /// Sets the output volume, 0...1, and unmutes when it goes above zero.
+    @discardableResult
+    func setVolume(_ value: Float) -> Bool {
+        var address = AudioObjectPropertyAddress(mSelector: Self.virtualMainVolume, mScope: kAudioDevicePropertyScopeOutput,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var v = Float32(min(max(value, 0), 1))
+        let ok = AudioObjectSetPropertyData(volumeDevice, &address, 0, nil, UInt32(MemoryLayout<Float32>.size), &v) == noErr
+        if ok {
+            volume = v
+            if muted && v > 0 { setMuted(false) }
+        }
+        return ok
+    }
+
+    func setMuted(_ on: Bool) {
+        var address = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyMute, mScope: kAudioDevicePropertyScopeOutput,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var value = UInt32(on ? 1 : 0)
+        if AudioObjectSetPropertyData(volumeDevice, &address, 0, nil, UInt32(MemoryLayout<UInt32>.size), &value) == noErr {
+            muted = on
+        }
+    }
+
+    // MARK: Wi-Fi
+
+    func readWiFi() {
+        guard let interface = CWWiFiClient.shared().interface() else { wifiOn = nil; wifiName = nil; return }
+        wifiOn = interface.powerOn()
+        wifiName = interface.ssid()
+    }
+
+    /// Turns Wi-Fi on or off. Returns an error message, or nil.
+    func setWiFi(_ on: Bool) -> String? {
+        guard let interface = CWWiFiClient.shared().interface() else { return "This Mac has no Wi-Fi." }
+        do {
+            try interface.setPower(on)
+            readWiFi()
+            return nil
+        } catch {
+            readWiFi()
+            return error.localizedDescription
+        }
+    }
+
+    var networkStatus: String {
+        switch network {
+        case .offline: return wifiOn == false ? "Wi-Fi is off" : "Not connected"
+        case .wired: return "Connected over Ethernet"
+        case .wifi: return wifiName.map { "Connected to \($0)" } ?? "Connected over Wi-Fi"
+        case .other: return "Connected"
+        }
+    }
+
+    var batteryStatus: String {
+        guard let battery else { return "" }
+        if battery.charging { return "Charging" }
+        return battery.onPower ? "On power adapter" : "On battery"
+    }
+
+    var batteryTimeText: String? {
+        guard let battery, let minutes = battery.minutesLeft else { return nil }
+        let time = "\(minutes / 60):\(String(format: "%02d", minutes % 60))"
+        return battery.charging ? "\(time) until full" : "\(time) remaining"
     }
 
     // MARK: Icons
@@ -210,7 +297,10 @@ final class TrayModel {
     }
 
     /// For snapshots.
-    func setForTesting(now: Date, volume: Float?, network: NetworkState, battery: Battery?) {
+    func setForTesting(now: Date, volume: Float?, network: NetworkState, battery: Battery?, wifiName: String? = nil) {
+        self.wifiOn = true
+        self.wifiName = wifiName
+        self.volumeSettable = true
         self.now = now
         self.volume = volume
         self.muted = false

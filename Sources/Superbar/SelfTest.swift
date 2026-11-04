@@ -146,6 +146,29 @@ enum SelfTest {
                 presenter.detectionEnabled = true
             }
 
+            // Tray: each icon is its own clickable view, and each opens its popover.
+            if let content = app.bar.contentView {
+                @MainActor func catchers(_ v: NSView) -> [NSView] { (v is MouseCatcher.CatcherView ? [v] : []) + v.subviews.flatMap(catchers) }
+                let trayButtons = catchers(content).filter { $0.frame.width < app.settings.metrics.buttonWidth }
+                let expected = app.tray.battery == nil ? 2 : 3
+                check("each tray icon is clickable", trayButtons.count == expected, "\(trayButtons.count) of \(expected)")
+            }
+            for item in TrayItem.allCases where item != .battery || app.tray.battery != nil {
+                let anchor = NSRect(x: (NSScreen.screens.first?.frame.maxX ?? 800) - 160, y: 0, width: 28, height: 40)
+                app.model.onTrayClick(item, anchor)
+                try? await Task.sleep(for: .seconds(0.2))
+                let opened = app.trayPopovers.isOpen && app.trayPopovers.item == item
+                app.model.onTrayClick(item, anchor)
+                check("the \(item.rawValue) icon opens its popover, and a second click closes it", opened && !app.trayPopovers.isOpen)
+            }
+            if let volume = app.tray.volume, app.tray.volumeSettable {
+                // Writes the volume it already has, so nothing audible changes.
+                check("the volume slider can set the volume", app.tray.setVolume(volume))
+            }
+
+            // App icon
+            check("the app has its icon", Bundle.main.url(forResource: "AppIcon", withExtension: "icns") != nil)
+
             // S-016
             app.settings.barSize = .small
             app.layoutBar()

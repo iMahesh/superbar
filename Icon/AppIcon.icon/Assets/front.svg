@@ -1,3 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <rect x="262" y="372" width="500" height="380" rx="72" fill="#FFFFFF"/>
+  <!-- The four-point spark on the orb, and the three app tiles on the bar. -->
+  <path d="M512 354 Q528 426 600 442 Q528 458 512 530 Q496 458 424 442 Q496 426 512 354 Z" fill="#FFFFFF"/>
+  <rect x="542" y="730" width="64" height="64" rx="16" fill="#FFFFFF"/>
+  <rect x="628" y="730" width="64" height="64" rx="16" fill="#FFFFFF" opacity="0.6"/>
+  <rect x="714" y="730" width="64" height="64" rx="16" fill="#FFFFFF" opacity="0.6"/>
 </svg>

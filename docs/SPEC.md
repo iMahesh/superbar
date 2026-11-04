@@ -29,7 +29,9 @@ The brief is in [BRIEF.md](BRIEF.md) and the stories in [STORIES.md](STORIES.md)
 | Restart, shut down, log out | `NSAppleScript`: `tell application "System Events" to restart` (and `shut down`, `log out`) | Automation of System Events |
 | Lock | ⌃⌘Q posted with `CGEvent` | Accessibility |
 | Show desktop | private `CoreDockSendNotification("com.apple.showdesktop.awake")`, looked up with `dlsym`; fallback: hide all other apps with `NSRunningApplication.hide()` | None |
-| Volume | CoreAudio `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` on the default output, with a property listener | None |
+| Volume | CoreAudio `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` on the default output, with a property listener; the Sound popover sets it and `kAudioDevicePropertyMute` | None |
+| Wi-Fi on/off | CoreWLAN `CWWiFiClient.shared().interface()`, `powerOn()`, `setPower(_:)`; `ssid()` is nil without Location access | None |
+| App icon | `AppIconArt` (SwiftUI) rendered by `Superbar --render-icon`, packed with `iconutil` into `Resources/AppIcon.icns` when Xcode's actool is missing; `Icon/AppIcon.icon` for Xcode builds | None |
 | Network | `NWPathMonitor` (connected, Wi-Fi or wired, offline) | None |
 | Battery | IOKit `IOPSCopyPowerSourcesInfo`, `IOPSNotificationCreateRunLoopSource` | None |
 | Hide the macOS Dock | `defaults write com.apple.dock autohide -bool true` and `autohide-delay -float 1000`, then `killall Dock`; restore the saved values on "Restore Dock" | None, but ask first |
@@ -62,6 +64,8 @@ Main types:
 - **Glow color.** Average the icon's pixels at 16 by 16, skip near-transparent and near-gray pixels, and boost saturation. Cache per bundle ID. Fallback: system accent color.
 - **Start menu.** Opens from the orb or ⌃⎋, focused on the search field (this panel is the one that becomes key). Typing filters apps by name with prefix matches first, then word starts, then contains; Return opens the top hit. Esc, a click outside, or ⌃⎋ again closes it. Shows up to 12 pinned apps (Start pins are separate from taskbar pins) and up to 10 recent apps.
 - **Power button.** "Shut down" by default; its arrow opens Sleep, Restart, Log out, Lock. Restart, shut down, and log out ask the system the normal way, so unsaved documents still get their prompt.
+- **Name.** Everything the app shows says "Superbar": "Superbar Settings…", "Pin to Superbar", "Unpin from Superbar". Never "Taskbar" or "Windows".
+- **Tray.** Each icon opens a popover above it; a second click, a click elsewhere, or any other bar action closes it. Wi-Fi: on/off switch, connection status, Wi-Fi Settings…. Sound: mute button, volume slider, percent, Sound Settings…. Battery: charge, charging or on battery, time left, Battery Settings…. Network shows Network Settings… on a Mac without Wi-Fi.
 - **Clock.** Time over the short date, updated at the start of each minute (not on a 1 s timer). Click shows a month calendar in a popover.
 - **Show desktop.** Click the strip at the far right to show the desktop; click again to bring the windows back.
 - **The bar and other windows.** macOS has no public API to reserve screen space, so zoomed and "Fill" windows reach the bottom of the screen and slide under the bar. Version one draws the bar above them and says so in Settings. With "Hide the macOS Dock" on, nothing else uses the bottom edge.

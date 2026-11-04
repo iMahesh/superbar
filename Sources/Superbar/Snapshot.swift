@@ -72,6 +72,15 @@ enum Snapshot {
                     app.preview.hide()
                 }
 
+                if wanted("tray") {
+                    let x = (app.bar?.frame.maxX ?? 1440) - 170
+                    for item in TrayItem.allCases {
+                        app.trayPopovers.open(item, anchor: NSRect(x: x, y: 0, width: 28, height: 40))
+                        await shot("tray-\(item.rawValue)", popover(app))
+                    }
+                    app.trayPopovers.close()
+                }
+
                 if wanted("calendar") {
                     app.calendar.open()
                     await shot("calendar", popover(app))
@@ -120,7 +129,8 @@ enum Snapshot {
         var parts = DateComponents()
         parts.year = 2026; parts.month = 11; parts.day = 4; parts.hour = 9; parts.minute = 41
         app.tray.setForTesting(now: Calendar.current.date(from: parts) ?? .now, volume: 0.6, network: .wifi,
-                               battery: .init(percent: 76, charging: false, onPower: false))
+                               battery: .init(percent: 76, charging: false, onPower: false, minutesLeft: 312),
+                               wifiName: "Home")
         for id in ["com.apple.TextEdit", "com.apple.Preview", "com.apple.calculator"] { app.model.noteRecent(id) }
         app.appIndex.start()
     }

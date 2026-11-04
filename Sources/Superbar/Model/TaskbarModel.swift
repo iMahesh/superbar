@@ -46,6 +46,7 @@ final class TaskbarModel {
     // Wired by AppDelegate.
     @ObservationIgnored var onToggleStart: () -> Void = {}
     @ObservationIgnored var onToggleCalendar: () -> Void = {}
+    @ObservationIgnored var onTrayClick: (_ item: TrayItem, _ rect: NSRect) -> Void = { _, _ in }
     @ObservationIgnored var onOpenSettings: () -> Void = {}
     @ObservationIgnored var onButtonHover: (_ id: String, _ inside: Bool, _ rect: NSRect) -> Void = { _, _, _ in }
     @ObservationIgnored var onPick: (_ id: String, _ rect: NSRect) -> Void = { _, _ in }
@@ -320,8 +321,8 @@ final class TaskbarModel {
         })
         if app.id != PinList.finderID {
             menu.addItem(app.isPinned
-                ? ActionItem("Unpin from Taskbar") { [weak self] in self?.unpin(id) }
-                : ActionItem("Pin to Taskbar") { [weak self] in self?.pin(id) })
+                ? ActionItem("Unpin from Superbar") { [weak self] in self?.unpin(id) }
+                : ActionItem("Pin to Superbar") { [weak self] in self?.pin(id) })
         }
         if app.windows.count == 1, let window = app.windows.first {
             menu.addItem(ActionItem("Close Window") { [weak self] in self?.close(window, of: id) })
@@ -339,7 +340,7 @@ final class TaskbarModel {
 
     func barMenu() -> NSMenu {
         let menu = NSMenu()
-        menu.addItem(ActionItem("Taskbar Settings…") { [weak self] in self?.onOpenSettings() })
+        menu.addItem(ActionItem("Superbar Settings…") { [weak self] in self?.onOpenSettings() })
         if dock?.isHidden == true {
             menu.addItem(ActionItem("Restore Dock") { [weak self] in self?.dock?.restore() })
         }

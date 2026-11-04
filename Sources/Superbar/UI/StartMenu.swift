@@ -302,7 +302,7 @@ private struct AppRow: View {
         .contextMenu {
             Button(model.isPinned(entry) ? "Unpin from Start Menu" : "Pin to Start Menu") { model.togglePin(entry) }
             if let id = entry.bundleID, !model.taskbar.pins.contains(id) {
-                Button("Pin to Taskbar") { model.taskbar.pin(id) }
+                Button("Pin to Superbar") { model.taskbar.pin(id) }
             }
         }
         .accessibilityAddTraits(.isButton)

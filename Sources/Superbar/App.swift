@@ -7,6 +7,7 @@ import SuperbarKit
 //   Superbar                         the taskbar
 //   APP_STORE=<x> Superbar           use a separate, emptied UserDefaults suite (tests, snapshots)
 //   APP_SNAPSHOT=<dir> Superbar      save PNGs of the bar, Start menu, previews, calendar, and Settings, then quit
+//   Superbar --render-icon <dir>     write the app icon's PNGs (tools/make_flat_icon.sh)
 //   Superbar --selftest              run the self-test and quit with 0 or 1 (tools/selftest.sh)
 
 @main
@@ -14,6 +15,9 @@ enum SuperbarMain {
     static let delegate = AppDelegate()
 
     static func main() {
+        if let i = CommandLine.arguments.firstIndex(of: "--render-icon"), CommandLine.arguments.count > i + 1 {
+            exit(AppIconArt.render(to: CommandLine.arguments[i + 1]) ? 0 : 1)
+        }
         let app = NSApplication.shared
         app.delegate = delegate
         app.setActivationPolicy(.accessory)   // no Dock icon, like LSUIElement
@@ -31,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) lazy var preview = PreviewController(model: model)
     private(set) lazy var startMenu = StartMenuController(model: StartMenuModel(index: appIndex, taskbar: model), settings: settings)
     private(set) lazy var calendar = CalendarController(settings: settings)
+    private(set) lazy var trayPopovers = TrayPopoverController(tray: tray, settings: settings)
     private(set) lazy var settingsWindow = SettingsWindowController(state: settingsState) { [unowned self] in
         AnyView(SettingsView(state: settingsState, settings: settings, dock: dock, permissions: permissions).themed())
     }
@@ -46,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                          size: NSSize(width: 800, height: settings.metrics.height), cornerRadius: 0, level: .statusBar)
         let presenter = BarPresenter(panel: bar, settings: settings)
         presenter.heldOpen = { [unowned self] in
-            startMenu.isOpen || preview.isVisible || calendar.isOpen || model.drag != nil
+            startMenu.isOpen || preview.isVisible || calendar.isOpen || trayPopovers.isOpen || model.drag != nil
         }
         barPresenter = presenter
         layoutBar()
@@ -83,7 +88,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.onToggleCalendar = { [weak self] in
             self?.startMenu.close()
             self?.preview.hide()
+            self?.trayPopovers.close()
             self?.calendar.toggle()
+        }
+        model.onTrayClick = { [weak self] item, rect in
+            self?.startMenu.close()
+            self?.preview.hide()
+            self?.calendar.close()
+            self?.trayPopovers.toggle(item, anchor: rect)
         }
         model.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
         model.onButtonHover = { [weak self] id, inside, rect in self?.preview.buttonHover(id, inside: inside, rect: rect) }
@@ -92,12 +104,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.startMenu.close()
             self?.calendar.close()
             self?.preview.hide()
+            self?.trayPopovers.close()
         }
         Power.onAutomationDenied = { [weak self] in self?.settingsWindow.show(tab: .permissions) }
     }
 
     func toggleStart() {
         calendar.close()
+        trayPopovers.close()
         preview.hide()
         startMenu.toggle()
     }
