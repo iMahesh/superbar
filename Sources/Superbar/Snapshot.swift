@@ -1,84 +1,146 @@
 import AppKit
+import ApplicationServices
 import IOKit.pwr_mgt
 import SwiftUI
+import SuperbarKit
 
-/// Screenshot mode for agents.
-///   APP_STORE=/tmp/test.store APP_SNAPSHOT=/tmp/shots ~/Applications/Superbar.app/Contents/MacOS/Superbar
-/// writes <page>-light.png and <page>-dark.png for every sidebar page, and
-/// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
-/// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
-/// APP_SNAPSHOT_PAGES=all,starred limits the pages. Add "settings" to include Settings.
-/// Add APP_ACCENT=<id> to see the pages in another accent.
+/// Screenshot mode for agents (tools/snap.sh):
+///   APP_STORE=test APP_SNAPSHOT=/tmp/Superbar-shots ~/Applications/Superbar.app/Contents/MacOS/Superbar
+/// writes <page>-light.png and <page>-dark.png for the bar (normal, small, three hover glows),
+/// the Start menu (open and searching), the preview popover, the calendar, and each Settings tab,
+/// with sample data, then quits. APP_SNAPSHOT_PAGES=bar,start limits the pages.
 enum Snapshot {
-    static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
-        let env = ProcessInfo.processInfo.environment
-        guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty else { return }
-        // Snapshots never run against the real database.
+    static var directory: String? {
+        let dir = ProcessInfo.processInfo.environment["APP_SNAPSHOT"] ?? ""
+        return dir.isEmpty ? nil : dir
+    }
+
+    static func runIfRequested(_ app: AppDelegate) -> Bool {
+        guard let dir = directory else { return false }
         guard Store.isOverridden else {
-            print("SNAPSHOT refused: set APP_STORE to a file in /tmp")
+            print("SNAPSHOT refused: set APP_STORE so real pins are never touched")
             NSApp.terminate(nil)
-            return
+            return true
         }
-        let only = env["APP_SNAPSHOT_PAGES"].map { Set($0.split(separator: ",").map(String.init)) }
+        let only = ProcessInfo.processInfo.environment["APP_SNAPSHOT_PAGES"].map { Set($0.split(separator: ",").map(String.init)) }
+        func wanted(_ page: String) -> Bool { only?.contains { page.hasPrefix($0) } ?? true }
+
         Task {
-            // A sleeping display gives screencapture nothing. Declaring user
-            // activity wakes it; the assertion keeps it on until the run quits.
             var activity: IOPMAssertionID = 0
             IOPMAssertionDeclareUserActivity("Snapshots" as CFString, kIOPMUserActiveLocal, &activity)
             var awake: IOPMAssertionID = 0
             IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
                                         IOPMAssertionLevel(kIOPMAssertionLevelOn), "Snapshots" as CFString, &awake)
             try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            seed(app)
             try? await Task.sleep(for: .seconds(1.5))
+
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                for page in SidebarItem.allCases where only?.contains(page.rawValue) ?? true {
-                    model.sidebar = page
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                @MainActor func shot(_ page: String, _ window: NSWindow?) async {
+                    guard wanted(page), let window else { return }
+                    try? await Task.sleep(for: .seconds(0.6))
+                    capture(window, to: "\(dir)/\(page)-\(mode).png")
                 }
-            }
-            if only == nil || only?.contains("settings") == true {
-                let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
-                openSettings()
-                try? await Task.sleep(for: .seconds(1))
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+
+                app.settings.barSize = .normal
+                app.layoutBar()
+                await shot("bar", app.bar)
+                for id in ["com.apple.Safari", "com.apple.mail", "com.apple.Notes"] {
+                    app.model.hoveredID = id
+                    await shot("bar-hover-\(id.split(separator: ".").last!.lowercased())", app.bar)
+                }
+                app.model.hoveredID = nil
+                app.settings.barSize = .small
+                app.layoutBar()
+                await shot("bar-small", app.bar)
+                app.settings.barSize = .normal
+                app.layoutBar()
+
+                if wanted("start") {
+                    app.startMenu.open()
+                    await shot("start-menu", NSApp.windows.first { $0.isVisible && $0.canBecomeKey && $0 is GlassPanel })
+                    app.startMenu.model.query = "saf"
+                    await shot("start-search", NSApp.windows.first { $0.isVisible && $0.canBecomeKey && $0 is GlassPanel })
+                    app.startMenu.close()
+                }
+
+                if wanted("preview") {
+                    let rect = buttonRect(app, index: 1)
+                    app.preview.showNow("com.apple.Safari", anchor: rect)
+                    await shot("preview", popover(app))
+                    app.preview.hide()
+                }
+
+                if wanted("calendar") {
+                    app.calendar.open()
+                    await shot("calendar", popover(app))
+                    app.calendar.close()
+                }
+
+                if wanted("settings") {
                     for tab in SettingsTab.allCases {
-                        model.settingsTab = tab
-                        try? await Task.sleep(for: .seconds(0.8))
-                        let settings = NSApp.windows.first { $0.isVisible && $0 !== main && !$0.isSheet }
-                        capture(to: "\(dir)/settings-\(tab.rawValue)-\(mode).png", window: settings)
+                        app.settingsWindow.show(tab: tab)
+                        await shot("settings-\(tab.rawValue)", app.settingsWindow.settingsWindow)
                     }
+                    app.settingsWindow.settingsWindow?.close()
                 }
             }
             print("SNAPSHOT done \(dir)")
-            // An open sheet refuses terminate, and the run would wait forever.
-            for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet) } }
             NSApp.terminate(nil)
         }
+        return true
     }
 
-    /// Captures the real window with screencapture, so glass, sidebars, and
-    /// materials look exactly as on screen. That needs Screen Recording
-    /// permission for the app that started this one (your terminal, or Claude).
-    /// Without it, falls back to drawing the view hierarchy, which leaves
-    /// sidebars and glass blank.
-    private static func capture(to path: String, window: NSWindow? = nil) {
-        // Another app can hide this one while snapshots run (computer use hides
-        // apps it does not control). Hidden windows cannot be captured.
-        if NSApp.isHidden { NSApp.unhideWithoutActivation() }
-        guard let window = window ?? NSApp.windows.first(where: { $0.canBecomeMain && !$0.isSheet }) else {
-            print("SNAPSHOT no window")
-            return
+    /// Sample apps: Finder, Safari (active, two windows), Mail (one window), Notes and
+    /// Music (pinned, not running), Terminal (running, not pinned).
+    private static func seed(_ app: AppDelegate) {
+        let element = AXUIElementCreateApplication(getpid())
+        let cache = IconCache.shared
+        func make(_ id: String, pid: pid_t?, pinned: Bool, active: Bool = false, windows: [AppWindow] = []) -> TaskbarApp? {
+            guard let url = cache.url(forBundleID: id) else { return nil }
+            let icon = cache.icon(for: id, url: url, running: nil)
+            return TaskbarApp(id: id, bundleID: id, pid: pid, name: TaskbarModel.displayName(url), icon: icon, url: url,
+                              isPinned: pinned, isActive: active, isHidden: false, windows: windows,
+                              glowColor: cache.glow(for: id, icon: icon))
         }
-        // Active, like a window someone is using: real accent colors and focus rings.
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-        let size = window.contentView?.bounds.size ?? .zero
-        GridProbes.shared.write(to: path.replacingOccurrences(of: ".png", with: "-layout.json"), window: size)
+        let safariWindows = [
+            AppWindow(windowID: 0, element: element, title: "Superbar – Release notes", isMinimized: false),
+            AppWindow(windowID: 0, element: AXUIElementCreateApplication(1), title: "Weather in Lisbon", isMinimized: true),
+        ]
+        app.model.staticApps = [
+            make("com.apple.finder", pid: 10, pinned: true, windows: [AppWindow(windowID: 0, element: element, title: "Downloads", isMinimized: false)]),
+            make("com.apple.Safari", pid: 11, pinned: true, active: true, windows: safariWindows),
+            make("com.apple.mail", pid: 12, pinned: true, windows: [AppWindow(windowID: 0, element: element, title: "Inbox", isMinimized: false)]),
+            make("com.apple.Notes", pid: nil, pinned: true),
+            make("com.apple.Music", pid: nil, pinned: true),
+            make("com.apple.Terminal", pid: 13, pinned: false, windows: [AppWindow(windowID: 0, element: element, title: "zsh", isMinimized: false)]),
+        ].compactMap { $0 }
+
+        var parts = DateComponents()
+        parts.year = 2026; parts.month = 11; parts.day = 4; parts.hour = 9; parts.minute = 41
+        app.tray.setForTesting(now: Calendar.current.date(from: parts) ?? .now, volume: 0.6, network: .wifi,
+                               battery: .init(percent: 76, charging: false, onPower: false))
+        for id in ["com.apple.TextEdit", "com.apple.Preview", "com.apple.calculator"] { app.model.noteRecent(id) }
+        app.appIndex.start()
+    }
+
+    private static func buttonRect(_ app: AppDelegate, index: Int) -> NSRect {
+        let m = app.settings.metrics
+        let x = (app.bar?.frame.minX ?? 0) + m.orb + Space.xs * 2 + CGFloat(index) * m.buttonWidth
+        return NSRect(x: x, y: app.bar?.frame.minY ?? 0, width: m.buttonWidth, height: m.height)
+    }
+
+    private static func popover(_ app: AppDelegate) -> NSWindow? {
+        NSApp.windows.first { $0.isVisible && $0 is GlassPanel && $0 !== app.bar && !$0.canBecomeKey }
+    }
+
+    /// Captures the real window with screencapture, so glass looks as on screen. That needs
+    /// Screen Recording for the app that started this one (your terminal, or Claude).
+    /// Without it, falls back to drawing the view hierarchy, which leaves the glass blank.
+    private static func capture(_ window: NSWindow, to path: String) {
+        if NSApp.isHidden { NSApp.unhideWithoutActivation() }
         try? FileManager.default.removeItem(atPath: path)
-        // The first capture of a run sometimes misses the window. Try three times.
         for _ in 1...3 {
             let shot = Process()
             shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
@@ -91,12 +153,11 @@ enum Snapshot {
             }
             Thread.sleep(forTimeInterval: 0.5)
         }
-        guard let view = window.contentView?.superview ?? window.contentView,
-              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        guard let view = window.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
         view.cacheDisplay(in: view.bounds, to: rep)
         if let data = rep.representation(using: .png, properties: [:]) {
             try? data.write(to: URL(fileURLWithPath: path))
-            print("SNAPSHOT \(path) (fallback: no Screen Recording permission, sidebars and glass are blank)")
+            print("SNAPSHOT \(path) (fallback: no Screen Recording permission, glass is blank)")
         }
     }
 }

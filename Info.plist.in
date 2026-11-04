@@ -13,5 +13,7 @@
 <key>LSMinimumSystemVersion</key><string>26.0</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
 <key>NSHighResolutionCapable</key><true/>
+<key>LSUIElement</key><true/>
+<key>NSAppleEventsUsageDescription</key><string>Superbar asks System Events to restart, shut down, or log out, so apps can still ask you to save your work.</string>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

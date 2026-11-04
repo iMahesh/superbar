@@ -1,51 +1,41 @@
 # Superbar
 
-A native macOS app in SwiftUI. It runs on this Mac only, with a local
-SwiftData database and no server.
+A Windows 7 style taskbar for the Mac: a glass bar along the bottom of the main
+screen with a Start orb, one button per app, hover previews, a tray, and a clock.
+An accessory app (LSUIElement, no Dock icon). Data lives in UserDefaults; no server.
+
+The brief is `docs/BRIEF.md`, the stories `docs/STORIES.md`, and the APIs,
+behaviors, and gotchas `docs/SPEC.md`. Read SPEC.md before changing behavior.
 
 ## Layout
 
-- `Sources/Superbar/` the app. `App.swift` has the window, menus, and the database location.
-- `Sources/SuperbarKit/` rules and data logic with no SwiftUI. Tests in `Tests/SuperbarKitTests/`.
-- `Package.swift` a Swift package. There is no Xcode project.
+- `Sources/SuperbarKit/` rules with no AppKit: click resolver, pin order, search ranking, clock tick, glow color, Dock save/restore, key combos. Tests in `Tests/SuperbarKitTests/`.
+- `Sources/Superbar/App.swift` the app delegate: builds the bar, wires the panels, the hotkey, and permissions.
+- `Sources/Superbar/Model/` `TaskbarModel` (apps, clicks, pins, drag, menus), `TrayModel`, `AppSettings`.
+- `Sources/Superbar/Windows/` AX window list and observers, window actions, ScreenCaptureKit thumbnails, icon and glow cache.
+- `Sources/Superbar/System/` private calls (SkyLight, `_AXUIElementGetWindow`, CoreDock) looked up with dlsym, permissions, Carbon hotkey, power actions, Dock preferences, `Store` (UserDefaults).
+- `Sources/Superbar/UI/` panels (`GlassPanel`, `MouseCatcher`), the bar, Start menu, preview popover, calendar.
 - `build.sh` builds, signs, and installs `~/Applications/Superbar.app`.
-- `Icon/AppIcon.icon` the app icon, an Icon Composer file (JSON plus SVG layers). `build.sh` compiles it with `tools/make_icon.sh`; `tools/icon_review.sh` renders every look into one PNG.
-- `docs/` the brief, the screen index, and the user stories, when they exist.
 
 ## Build and check
 
-- Build and install: `./build.sh`. Add `--open` to restart the app with the new build. The build shows warnings; fix them.
-- Unit tests: `swift test --scratch-path ~/Library/Developer/Superbar/test-build`.
-- Self-test (the app's real functions on a /tmp store): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
-- After every UI change, take snapshots with sample data and look at them: `tools/snap.sh`.
-  It writes `/tmp/Superbar-shots/<page>-light.png` and `-dark.png` for every sidebar page, and `settings-<tab>-light.png` and `-dark.png` for every Settings tab, then quits. `APP_SNAPSHOT_PAGES=all,settings tools/snap.sh` limits the pages.
-  For a panel, sheet, or popover, add a capture to `Snapshot.swift` like the Settings loop.
-- Snapshots, seed data, and the self-test refuse to run without `APP_STORE` in /tmp.
-- Never test against the real database in `~/Library/Application Support/Superbar/`.
-- Then check the grid: `tools/grid-lint.sh` and `swift tools/check-layout.swift /tmp/Superbar-shots/*-layout.json`. Both print PASS.
-- A change is done when the build has no errors, the grid checks pass, and you looked at the light and dark snapshots.
+- Build and install: `./build.sh`. `--open` restarts the app with the new build. Fix every warning except the `ld: warning: search path ... not found` lines, which come from the Command Line Tools.
+- `tools/sdk.sh` (sourced by build.sh and tools/test.sh): with only the Command Line Tools, builds use the newest macOS 26.x SDK, because the 27.x SDK makes SwiftUI's `@State` a macro whose plugin only Xcode ships. For a bare `swift build`, run `source tools/sdk.sh` first.
+- Unit tests: `tools/test.sh` (adds the Testing macro plugin path the Command Line Tools leave out).
+- Self-test (real app functions on a test UserDefaults suite): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
+- Snapshots: `tools/snap.sh` writes `/tmp/Superbar-shots/<page>-light.png` and `-dark.png` for the bar (normal, small, hover glows), Start menu, preview, calendar, and Settings tabs, then quits. `APP_SNAPSHOT_PAGES=bar,start tools/snap.sh` limits the pages. Without Screen Recording for the launching app the glass is blank in the PNGs.
+- Grid: `tools/grid-lint.sh` prints PASS. Silence a line with `// grid: ok <why>`.
+- Snapshots and the self-test refuse to run without `APP_STORE`; they use the `com.maheshporeddy.superbar.test` suite, never the real pins, and never touch the real Dock.
+- A change is done when the build has no errors, the tests, self-test, and grid lint pass, and you looked at the light and dark snapshots.
 
-## Design rules
+## Rules
 
-- Use Apple's controls and system styles. Only the accent color is custom: `UI/Theme.swift` (`ThemeStore.defaultID`). People change it, and light or dark mode, in Settings > Appearance.
-- Views use `.tint`, `Palette.accent`, `Palette.accentText` (accent-colored text), and `Palette.onAccent` (text on an accent fill). Never hard-code colors, radii, or durations in views.
-- Compare accents: add `APP_ACCENT=<id>` to the snapshot command.
-- Spacing comes from `Space` in `UI/Grid.swift`, on a 4 pt grid. Mark custom pages and cards with `.gridArea` and `.gridProbe`.
-- Windows open calm: `.noInitialFocus()` on every window and sheet (no focus ring or selected text on open), `.fitsContent()` on sheets and Settings tabs (no scroll bar with nothing to scroll). System scroll bars. Both in `UI/WindowBehavior.swift`.
-- Settings: one tab per topic in `SettingsView.swift`, one grouped Form per tab. Add a case to `SettingsTab` for a new tab.
-- Window chrome (title bar, toolbar, sidebar, menus, sheets) stays system. Buttons use system styles, like `.borderedProminent`.
-- Colors: `.primary`, `.secondary`, `.tint`, and system colors. Never fixed grays or white for text.
-- Every action has a menu bar item and a keyboard shortcut.
-- `Label` for icon and text pairs. SF Symbols for icons.
-- `ContentUnavailableView` for empty states.
-- Liquid Glass belongs to floating controls only, never to content.
-
-## Skills
-
-The bama plugin has a skill for each step: `mac-design` (design rules),
-`design-system` (accent and tokens), `layout-grid`, `ux-design`,
-`swift-swiftui`, `os-integrations`, `performance`, `build-and-verify`,
-`test-mac-app`, `app-icon`, `user-stories`, and `improve-loop`. Use them.
+- The look is Aero-style glass, not Liquid Glass: `GlassPanel` (HUD blur), `Glass.tint`, `Glass.highlight`. Spacing from `Space` in `UI/Grid.swift`.
+- Never use Microsoft's name, logo, or sounds. The orb glyph (`Spark`) is original.
+- AX and SkyLight calls run off the main thread (`@concurrent` in `WindowActions`, `AXReader`, `AXObserverHost`). Never call AX on the main actor.
+- The bar and popovers never become key. Only the Start panel does.
+- Never change the Dock's defaults without the confirmation in `DockController.requestHide()`.
+- Ad hoc builds lose Accessibility and Screen Recording grants on every rebuild. Sign with an Apple Development certificate to keep them.
 
 ## Git
 

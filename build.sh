@@ -12,6 +12,7 @@ name="Superbar"
 scratch="$HOME/Library/Developer/$name/build"
 config=release
 [[ " $* " == *" --debug "* ]] && config=debug
+source "$here/tools/sdk.sh"
 
 # Sign with your Apple Development certificate when you have one (Xcode >
 # Settings > Accounts). Otherwise sign ad hoc, which is fine for your own Mac.
@@ -39,7 +40,8 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$name"
 sed -e "s/__BUILD__/$(date +%Y%m%d%H%M)/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
 # The icon: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns, rebuilt when it changed.
-if [[ -d "$here/Icon/AppIcon.icon" ]]; then
+# actool ships with Xcode only; with just the Command Line Tools the app keeps the generic icon.
+if [[ -d "$here/Icon/AppIcon.icon" ]] && xcrun -f actool >/dev/null 2>&1; then
   car="$here/Resources/Assets.car"
   if [[ ! -f "$car" || -n "$(find "$here/Icon/AppIcon.icon" -newer "$car" | head -1)" ]]; then
     "$here/tools/make_icon.sh"

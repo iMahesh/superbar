@@ -1,0 +1,136 @@
+import Foundation
+import Testing
+@testable import SuperbarKit
+
+// S-001
+@Test func barHoldsOnlyRegularAppsFinderFirst() {
+    let running = [
+        AppOrdering.Running(id: "com.apple.Safari", isRegular: true, launchOrder: 3),
+        AppOrdering.Running(id: "com.apple.controlcenter", isRegular: false, launchOrder: 1),
+        AppOrdering.Running(id: "com.apple.finder", isRegular: true, launchOrder: 2),
+        AppOrdering.Running(id: "com.apple.Notes", isRegular: true, launchOrder: 0),
+    ]
+    let ids = AppOrdering.order(pinned: PinList(), running: running)
+    #expect(ids == ["com.apple.finder", "com.apple.Notes", "com.apple.Safari"])
+}
+
+@Test func pinnedAppKeepsItsSlotWhenItLaunches() {
+    let pins = PinList(["com.apple.mail", "com.apple.Safari"])
+    let ids = AppOrdering.order(pinned: pins, runningInLaunchOrder: ["com.apple.Notes", "com.apple.Safari"])
+    #expect(ids == ["com.apple.finder", "com.apple.mail", "com.apple.Safari", "com.apple.Notes"])
+}
+
+// S-003
+@Test func clickResolverCoversEveryState() {
+    #expect(ClickResolver.resolve(.init(isRunning: false)) == .launch)
+    #expect(ClickResolver.resolve(.init(isRunning: true, visibleWindows: 2)) == .focus)
+    #expect(ClickResolver.resolve(.init(isRunning: true, isHidden: true, visibleWindows: 1)) == .unhide)
+    #expect(ClickResolver.resolve(.init(isRunning: true, minimizedWindows: 1)) == .restoreMinimized)
+    #expect(ClickResolver.resolve(.init(isRunning: true, isActive: true, visibleWindows: 1)) == .minimize)
+    #expect(ClickResolver.resolve(.init(isRunning: true, isActive: true, minimizedWindows: 1)) == .restoreMinimized)
+    #expect(ClickResolver.resolve(.init(isRunning: true, isActive: true, visibleWindows: 2)) == .pick)
+    #expect(ClickResolver.resolve(.init(isRunning: true, isActive: true, visibleWindows: 1, minimizedWindows: 1)) == .pick)
+    #expect(ClickResolver.resolve(.init(isRunning: true)) == .reopen)
+    #expect(ClickResolver.resolve(.init(isRunning: true, isActive: true)) == .reopen)
+}
+
+// S-004
+@Test func pinningKeepsOrderAndFinderStays() {
+    var pins = PinList(["com.apple.mail"])
+    pins.pin("com.apple.Safari")
+    pins.pin("com.apple.Notes", at: 1)
+    #expect(pins.ids == ["com.apple.finder", "com.apple.Notes", "com.apple.mail", "com.apple.Safari"])
+    #expect(pins.unpin("com.apple.finder") == false)
+    pins.unpin("com.apple.mail")
+    #expect(pins.ids == ["com.apple.finder", "com.apple.Notes", "com.apple.Safari"])
+    pins.move("com.apple.Safari", to: 0)
+    #expect(pins.ids == ["com.apple.finder", "com.apple.Safari", "com.apple.Notes"])
+    #expect(PinList(["com.apple.Notes", "com.apple.finder", "com.apple.Notes"]).ids == ["com.apple.finder", "com.apple.Notes"])
+}
+
+@Test func recentListKeepsTenNewestFirst() {
+    var recent = RecentList()
+    for i in 0..<12 { recent.note("app\(i)") }
+    recent.note("app5")
+    #expect(recent.ids.count == 10)
+    #expect(recent.ids.first == "app5")
+    #expect(!recent.ids.contains("app0"))
+}
+
+// S-005
+@Test func searchRanksPrefixThenWordStartThenContains() {
+    let names = ["Mosaffa", "Safari", "Unsafe Notes", "Calendar"]
+    let ranked = SearchRanker.rank(names, query: "saf") { $0 }
+    #expect(ranked == ["Safari", "Unsafe Notes", "Mosaffa"] || ranked == ["Safari", "Mosaffa", "Unsafe Notes"])
+    #expect(ranked.first == "Safari")
+    #expect(SearchRanker.match(name: "Visual Studio Code", query: "stu") == .wordStart)
+    #expect(SearchRanker.match(name: "FaceTime", query: "time") == .wordStart)
+    #expect(SearchRanker.match(name: "Mosaffa", query: "saf") == .contains)
+    #expect(SearchRanker.match(name: "Calendar", query: "saf") == nil)
+}
+
+// S-007
+@Test func clockTicksAtTheStartOfTheNextMinute() {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "UTC")!
+    let date = cal.date(from: DateComponents(year: 2026, month: 11, day: 3, hour: 9, minute: 41, second: 27))!
+    let next = ClockTick.nextMinute(after: date, calendar: cal)
+    let parts = cal.dateComponents([.hour, .minute, .second, .nanosecond], from: next)
+    #expect(parts.hour == 9 && parts.minute == 42 && parts.second == 0)
+    #expect(next.timeIntervalSince(date) == 33)
+}
+
+// S-011
+@Test func minimizedWindowsListAfterVisibleOnes() {
+    let windows = [("a", true), ("b", false), ("c", true), ("d", false)]
+    #expect(WindowOrder.pickerOrder(windows) { $0.1 }.map(\.0) == ["b", "d", "a", "c"])
+}
+
+// S-012
+private func icon(_ fill: (Int) -> (UInt8, UInt8, UInt8, UInt8)) -> [UInt8] {
+    (0..<256).flatMap { i -> [UInt8] in let p = fill(i); return [p.0, p.1, p.2, p.3] }
+}
+
+@Test func mostlyBlueIconGlowsBlue() {
+    let px = icon { i in i % 5 == 0 ? (200, 200, 200, 255) : (i % 7 == 0 ? (0, 0, 0, 0) : (30, 90, 220, 255)) }
+    let glow = try! #require(GlowColor.from(premultipliedRGBA: px))
+    #expect((200...250).contains(glow.hsb.h))
+    #expect(glow.hsb.s > 0.6)
+}
+
+@Test func grayIconFallsBackToAccent() {
+    #expect(GlowColor.from(premultipliedRGBA: icon { i in let v = UInt8(i % 256); return (v, v, v, 255) }) == nil)
+    #expect(GlowColor.from(premultipliedRGBA: icon { _ in (0, 0, 0, 0) }) == nil)
+}
+
+// S-015
+private final class FakeDock: DockPreferences {
+    var autohide: Bool?
+    var autohideDelay: Double?
+    var restarts = 0
+    init(autohide: Bool?, delay: Double?) { self.autohide = autohide; self.autohideDelay = delay }
+    func write(autohide: Bool?, autohideDelay: Double?) { self.autohide = autohide; self.autohideDelay = autohideDelay }
+    func restartDock() { restarts += 1 }
+}
+
+@Test func dockControlSavesOldValuesFirstAndRestoresThem() {
+    let store = UserDefaults(suiteName: "superbar.tests.\(UUID().uuidString)")!
+    let dock = FakeDock(autohide: false, delay: nil)
+    let control = DockControl(prefs: dock, store: store)
+    control.hideDock()
+    #expect(control.hasSavedState)
+    #expect(control.savedAutohide == false && control.savedDelay == nil)
+    #expect(dock.autohide == true && dock.autohideDelay == 1000)
+    // Hiding twice must not overwrite the saved originals with our own values.
+    control.hideDock()
+    #expect(control.savedAutohide == false)
+    control.restoreDock()
+    #expect(dock.autohide == false && dock.autohideDelay == nil)
+    #expect(!control.hasSavedState)
+    #expect(dock.restarts == 3)
+}
+
+@Test func keyComboShowsSymbols() {
+    #expect(KeyCombo.startDefault.display == "⌃⎋")
+    #expect(KeyCombo(keyCode: 49, modifiers: KeyCombo.command | KeyCombo.option).display == "⌥⌘Space")
+}
