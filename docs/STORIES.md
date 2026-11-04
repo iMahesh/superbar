@@ -154,6 +154,15 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-023 Trash on the bar
+As the user with the Dock hidden, I click the Trash icon left of the tray and Finder opens my Trash.
+Depends: S-007
+Acceptance:
+- [self-test] The tray has four clickable icons (Trash, Wi-Fi, sound, battery), and the Trash folder resolves.
+- [snap] The Trash icon sits just left of Wi-Fi, in the tray's style.
+- [manual] Verified 2026-11-04: a click brought Finder to the front with a window titled "Trash".
+Status: built
+
 ### S-022 Settings acts like an app window
 As the user, Superbar Settings opens in front of other apps, has a button on the bar, and can be minimized.
 Depends: S-001, S-014

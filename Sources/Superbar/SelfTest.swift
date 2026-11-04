@@ -162,7 +162,7 @@ enum SelfTest {
             if let content = app.bar.contentView {
                 @MainActor func catchers(_ v: NSView) -> [NSView] { (v is MouseCatcher.CatcherView ? [v] : []) + v.subviews.flatMap(catchers) }
                 let trayButtons = catchers(content).filter { $0.frame.width < app.settings.metrics.buttonWidth }
-                let expected = app.tray.battery == nil ? 2 : 3
+                let expected = app.tray.battery == nil ? 3 : 4   // Trash, Wi-Fi, sound, battery
                 check("each tray icon is clickable", trayButtons.count == expected, "\(trayButtons.count) of \(expected)")
             }
             for item in TrayItem.allCases where item != .battery || app.tray.battery != nil {
@@ -177,6 +177,10 @@ enum SelfTest {
                 // Writes the volume it already has, so nothing audible changes.
                 check("the volume slider can set the volume", app.tray.setVolume(volume))
             }
+
+            // S-023
+            let trash = FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).first
+            check("the Trash folder resolves for the Trash button", trash?.lastPathComponent == ".Trash", trash?.path ?? "nil")
 
             // App icon
             check("the app has its icon", Bundle.main.url(forResource: "AppIcon", withExtension: "icns") != nil)

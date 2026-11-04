@@ -243,6 +243,9 @@ private struct TrayView: View {
 
     var body: some View {
         HStack(spacing: Space.xs) {
+            // Trash: with the Dock hidden, the bar is the way to it.
+            TrayButton(symbol: "trash", help: "Trash", width: 28, metrics: metrics,
+                       interactive: interactive) { _ in model.openTrash() }
             TrayButton(symbol: tray.networkSymbol, help: tray.networkHelp, width: 28, metrics: metrics,
                        interactive: interactive) { model.onTrayClick(.network, $0) }
             TrayButton(symbol: tray.volumeSymbol, help: tray.volumeHelp, width: 28, metrics: metrics,

@@ -394,6 +394,17 @@ final class TaskbarModel {
         return menu
     }
 
+    // MARK: Trash
+
+    /// Opens the Trash in a Finder window. Through Launch Services, so Superbar itself
+    /// never reads the Trash folder (that needs Full Disk Access).
+    func openTrash() {
+        onCloseTransient()
+        let trash = FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory()).appending(path: ".Trash")
+        NSWorkspace.shared.open(trash)
+    }
+
     // MARK: Mission Control
 
     static let missionControlURL = URL(fileURLWithPath: "/System/Applications/Mission Control.app")
