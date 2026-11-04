@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     let settingsState = SettingsState()
     private(set) var bar: GlassPanel!
+    private(set) var barPresenter: BarPresenter?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 1.0)
@@ -43,14 +44,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wire()
         bar = GlassPanel(content: TaskbarView(model: model, tray: tray, settings: settings),
                          size: NSSize(width: 800, height: settings.metrics.height), cornerRadius: 0, level: .statusBar)
+        let presenter = BarPresenter(panel: bar, settings: settings)
+        presenter.heldOpen = { [unowned self] in
+            startMenu.isOpen || preview.isVisible || calendar.isOpen || model.drag != nil
+        }
+        barPresenter = presenter
         layoutBar()
-        bar.orderFrontRegardless()
         tray.start()
 
         if Snapshot.runIfRequested(self) { return }
         if SelfTest.runIfRequested(self) { return }
 
         model.startWatching()
+        presenter.start()
         HotkeyCenter.shared.onStart = { [weak self] in self?.toggleStart() }
         HotkeyCenter.shared.register(settings.startHotkey)
         permissions.onAccessibilityGranted = { [weak self] in self?.model.accessibilityGranted() }
@@ -96,11 +102,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startMenu.toggle()
     }
 
-    /// Full width along the bottom of the main screen (the one with the menu bar).
+    /// Full width along the bottom of the main screen (the one with the menu bar),
+    /// or tucked below it while a full-screen app is showing (BarPresenter).
     func layoutBar() {
-        guard let screen = NSScreen.screens.first, let bar else { return }
-        let frame = NSRect(x: screen.frame.minX, y: screen.frame.minY, width: screen.frame.width, height: settings.metrics.height)
-        bar.setFrame(frame, display: true)
+        barPresenter?.layout()
     }
 
     private func observeBarSize() {

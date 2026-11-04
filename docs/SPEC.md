@@ -13,7 +13,8 @@ The brief is in [BRIEF.md](BRIEF.md) and the stories in [STORIES.md](STORIES.md)
 
 | Part | API | Permission |
 | --- | --- | --- |
-| The bar | `NSPanel` with `[.borderless, .nonactivatingPanel]`, level `.statusBar`, `collectionBehavior` `[.canJoinAllSpaces, .stationary, .fullScreenNone]` | None |
+| The bar | `NSPanel` with `[.borderless, .nonactivatingPanel]`, level `.statusBar` (set after `isFloatingPanel`, which resets the level), `collectionBehavior` `[.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]` | None |
+| Full-screen check | private SkyLight `SLSManagedDisplayGetCurrentSpace` + `SLSSpaceGetType` (4 = full screen) for the main display; fallbacks: AX `AXFullScreen`, then a window covering the whole screen | None (AX fallback: Accessibility) |
 | Running apps | `NSWorkspace.shared.runningApplications` filtered to `.regular`, plus `didLaunch`, `didTerminate`, `didActivate`, `didHide`, `didUnhide` notifications | None |
 | Windows per app | AX `kAXWindowsAttribute` on `AXUIElementCreateApplication(pid)` (includes minimized), matched to `CGWindowListCopyWindowInfo` IDs with private `_AXUIElementGetWindow` | Accessibility |
 | Window titles | AX `kAXTitleAttribute` first, `kCGWindowName` second | Accessibility; Screen Recording for the CG name |
@@ -48,6 +49,7 @@ Main types:
 - `TrayModel`: volume, network, battery, time. `@Observable`.
 - `DockControl`: reads, saves, changes, and restores the Dock's autohide settings.
 - `HotkeyCenter`, `KeyCombo`, `Permissions`: as in the window snapper spec.
+- `BarPresenter` / `FullScreenDetector` / `EdgeReveal`: full-screen check, edge reveal, and the slide.
 
 ## Behaviors that matter
 
@@ -63,7 +65,7 @@ Main types:
 - **Clock.** Time over the short date, updated at the start of each minute (not on a 1 s timer). Click shows a month calendar in a popover.
 - **Show desktop.** Click the strip at the far right to show the desktop; click again to bring the windows back.
 - **The bar and other windows.** macOS has no public API to reserve screen space, so zoomed and "Fill" windows reach the bottom of the screen and slide under the bar. Version one draws the bar above them and says so in Settings. With "Hide the macOS Dock" on, nothing else uses the bottom edge.
-- **Full screen.** Hide the bar while the front app is in a full-screen Space (`fullScreenNone` keeps it out of those Spaces).
+- **Full screen.** While the main display shows a full-screen Space, the bar hides. Resting the pointer on the bottom edge for 0.2 s slides it up over the app, like the Dock; it slides away 0.6 s after the pointer leaves it. It stays up while the Start menu, a preview, the calendar, or a menu is open, and ⌃⎋ shows it with the Start menu. Checked on every Space change and app switch, again 0.7 s later, and every 2 s. The Start menu, previews, and calendar also join full-screen Spaces (`fullScreenAuxiliary`).
 - **Prewarm.** 2 s after launch, build the Start menu panel and the preview popover and index apps, so the first open is instant.
 
 ## Gotchas
@@ -73,6 +75,8 @@ Main types:
 - `kAXWindowsAttribute` is the only list that includes minimized windows; `CGWindowListCopyWindowInfo` with `.optionOnScreenOnly` does not. Use AX for the list and CG only to get IDs for previews and focus.
 - Minimized windows cannot be captured by ScreenCaptureKit. Keep the last picture taken before it minimized, or show the icon.
 - An app that hangs blocks AX calls on it. Set `AXUIElementSetMessagingTimeout` to 1.0 and do AX work off the main thread.
+- A full-screen window does not always cover the whole screen: on this Mac it starts 30 pt down, below the menu bar area, exactly like a zoomed window. Bounds cannot tell them apart; ask SkyLight for the Space type.
+- `isFloatingPanel = true` resets a panel's level to `.floating`. Set it before `level`.
 - `NSRunningApplication.activate()` brings the app, not a specific window. Use the SkyLight focus call for "click a thumbnail".
 - "Click the active app to minimize" fights with focus: the bar is a non-activating panel; read `NSWorkspace.frontmostApplication` at mouse-down, not mouse-up.
 - A hosting view in a panel that is not key eats the first click. Return true from `acceptsFirstMouse`.

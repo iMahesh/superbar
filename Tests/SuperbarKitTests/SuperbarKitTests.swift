@@ -134,3 +134,51 @@ private final class FakeDock: DockPreferences {
     #expect(KeyCombo.startDefault.display == "⌃⎋")
     #expect(KeyCombo(keyCode: 49, modifiers: KeyCombo.command | KeyCombo.option).display == "⌥⌘Space")
 }
+
+// S-017
+@Test func edgeRevealShowsAfterRestingOnTheEdge() {
+    var r = EdgeReveal()
+    #expect(r.update(pointerHeight: 300, barHeight: 40, heldOpen: false, now: 0) == .none)
+    #expect(r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 1.0) == .none)
+    #expect(r.update(pointerHeight: 1, barHeight: 40, heldOpen: false, now: 1.1) == .none)
+    #expect(r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 1.25) == .show)
+    #expect(r.isRevealed)
+}
+
+@Test func edgeRevealIgnoresAQuickPass() {
+    var r = EdgeReveal()
+    _ = r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0)
+    _ = r.update(pointerHeight: 80, barHeight: 40, heldOpen: false, now: 0.1)
+    #expect(r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0.25) == .none)
+    #expect(!r.isRevealed)
+}
+
+@Test func edgeRevealStaysOverTheBarAndHidesAfterLeaving() {
+    var r = EdgeReveal()
+    _ = r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0)
+    #expect(r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0.3) == .show)
+    #expect(r.update(pointerHeight: 30, barHeight: 40, heldOpen: false, now: 5) == .none)
+    #expect(r.update(pointerHeight: 400, barHeight: 40, heldOpen: false, now: 6) == .none)
+    #expect(r.update(pointerHeight: 30, barHeight: 40, heldOpen: false, now: 6.4) == .none)  // came back: timer resets
+    #expect(r.update(pointerHeight: 400, barHeight: 40, heldOpen: false, now: 7) == .none)
+    #expect(r.update(pointerHeight: 400, barHeight: 40, heldOpen: false, now: 7.7) == .hide)
+    #expect(!r.isRevealed)
+}
+
+@Test func edgeRevealHoldsWhileAMenuIsOpen() {
+    var r = EdgeReveal()
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: true, now: 0) == .show)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: true, now: 10) == .none)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 10.1) == .none)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 10.8) == .hide)
+}
+
+@Test func screenCoverFindsOnlyWholeScreenWindowsOfTheFrontApp() {
+    let screen = CGRect(x: 0, y: 0, width: 1512, height: 982)
+    let full = ScreenCover.Window(bounds: screen, layer: 0, ownerPID: 7)
+    let zoomed = ScreenCover.Window(bounds: CGRect(x: 0, y: 33, width: 1512, height: 949), layer: 0, ownerPID: 7)
+    let menuBar = ScreenCover.Window(bounds: screen, layer: 25, ownerPID: 7)
+    #expect(ScreenCover.isFullScreen([full], frontPID: 7, screen: screen))
+    #expect(!ScreenCover.isFullScreen([full], frontPID: 8, screen: screen))
+    #expect(!ScreenCover.isFullScreen([zoomed, menuBar], frontPID: 7, screen: screen))
+}

@@ -25,15 +25,17 @@ final class GlassPanel: NSPanel {
         super.init(contentRect: NSRect(origin: .zero, size: size),
                    styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
                    backing: .buffered, defer: false)
-        self.level = level
+        // isFloatingPanel resets the level to .floating, so it must come first.
         isFloatingPanel = true
+        self.level = level
         hidesOnDeactivate = false
         isMovable = false
         isOpaque = false
         backgroundColor = .clear
         hasShadow = cornerRadius > 0
         animationBehavior = .utilityWindow
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenNone, .ignoresCycle]
+        // .fullScreenAuxiliary: the bar and its popovers also appear over full-screen apps.
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
 
         let effect = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
         effect.material = .hudWindow

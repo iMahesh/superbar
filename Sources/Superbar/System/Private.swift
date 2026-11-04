@@ -9,6 +9,9 @@ nonisolated enum Private {
     private typealias PostEventRecordTo = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, UnsafeMutablePointer<UInt8>) -> CGError
     private typealias AXGetWindow = @convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError
     private typealias CoreDockSendNotification = @convention(c) (CFString, Int32) -> Void
+    private typealias MainConnectionID = @convention(c) () -> Int32
+    private typealias DisplayCurrentSpace = @convention(c) (Int32, CFString) -> UInt64
+    private typealias SpaceGetType = @convention(c) (Int32, UInt64) -> Int32
 
     private static func symbol<T>(_ name: String, in path: String? = nil, as type: T.Type) -> T? {
         // RTLD_DEFAULT searches every loaded image; SkyLight is opened by path first.
@@ -23,6 +26,9 @@ nonisolated enum Private {
     private static let postEventRecordTo = symbol("SLPSPostEventRecordTo", in: skyLight, as: PostEventRecordTo.self)
     private static let axGetWindow = symbol("_AXUIElementGetWindow", as: AXGetWindow.self)
     private static let coreDockSend = symbol("CoreDockSendNotification", as: CoreDockSendNotification.self)
+    private static let mainConnectionID = symbol("SLSMainConnectionID", in: skyLight, as: MainConnectionID.self)
+    private static let displayCurrentSpace = symbol("SLSManagedDisplayGetCurrentSpace", in: skyLight, as: DisplayCurrentSpace.self)
+    private static let spaceGetType = symbol("SLSSpaceGetType", in: skyLight, as: SpaceGetType.self)
 
     /// Private calls this macOS lacks, for the self-test. Each falls back, but less well.
     static var missing: [String] {
@@ -30,7 +36,21 @@ nonisolated enum Private {
          ("_SLPSSetFrontProcessWithOptions", setFrontProcess != nil),
          ("SLPSPostEventRecordTo", postEventRecordTo != nil),
          ("_AXUIElementGetWindow", axGetWindow != nil),
-         ("CoreDockSendNotification", coreDockSend != nil)].filter { !$0.1 }.map(\.0)
+         ("CoreDockSendNotification", coreDockSend != nil),
+         ("SLSManagedDisplayGetCurrentSpace", displayCurrentSpace != nil && mainConnectionID != nil),
+         ("SLSSpaceGetType", spaceGetType != nil)].filter { !$0.1 }.map(\.0)
+    }
+
+    /// Whether the main display's current Space is a full-screen one (Space type 4),
+    /// as yabai reads it. No permission needed. Nil when the calls are missing.
+    static func mainDisplayIsInFullScreenSpace() -> Bool? {
+        guard let mainConnectionID, let displayCurrentSpace, let spaceGetType,
+              let uuid = CGDisplayCreateUUIDFromDisplayID(CGMainDisplayID())?.takeRetainedValue(),
+              let name = CFUUIDCreateString(nil, uuid) else { return nil }
+        let connection = mainConnectionID()
+        let space = displayCurrentSpace(connection, name)
+        guard space != 0 else { return nil }
+        return spaceGetType(connection, space) == 4
     }
 
     /// The CGWindowID behind an AX window, or nil.

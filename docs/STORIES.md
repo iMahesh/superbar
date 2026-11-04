@@ -11,7 +11,7 @@ Screens: taskbar.png
 Acceptance:
 - [snap] The bar is full width, 40 pt tall, with the orb on the left and the clock on the right, in light and dark mode.
 - [unit] The app list holds only apps with activationPolicy .regular, Finder first.
-- [manual] The bar stays put when switching Spaces and is gone in a full-screen app.
+- [manual] The bar stays put when switching Spaces; in a full-screen app it hides until the pointer rests on the bottom edge (S-017).
 Status: built
 
 ### S-002 Track running apps
@@ -73,6 +73,16 @@ Acceptance:
 - [snap] Each row shows On or Off, one line on what breaks without it, and a Grant button.
 - [manual] Within 2 seconds of a grant, the row shows On and minimize works without a restart.
 - [manual] Settings opens by itself at launch while Accessibility is off.
+Status: built
+
+### S-017 Taskbar over full-screen apps
+As the user, I move the pointer to the bottom edge in a full-screen app and the bar slides up, so I can switch apps without leaving full screen.
+Depends: S-001
+Acceptance:
+- [unit] EdgeReveal shows after a 0.2 s rest on the edge, ignores a quick pass, holds while a menu is open, and hides 0.6 s after the pointer leaves.
+- [self-test] In full screen the bar hides, slides up from the edge, hides again, stays up with the Start menu open, and comes back when full screen ends.
+- [manual] Verified with a real full-screen window on 2026-11-04: hidden, a 0.1 s touch does nothing, a rest shows it over the app at the status-bar level, moving away hides it, it returns after full screen ends.
+- [manual] ⌃⎋ in a full-screen app opens the Start menu with the bar under it.
 Status: built
 
 ## M2 Windows, previews, and tray

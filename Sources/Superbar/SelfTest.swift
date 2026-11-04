@@ -32,6 +32,7 @@ enum SelfTest {
                   app.bar.frame.minY == NSScreen.screens.first?.frame.minY && app.bar.frame.width == NSScreen.screens.first?.frame.width)
             check("the bar is 40 pt tall", app.bar.frame.height == 40)
             check("the bar cannot take focus", !app.bar.canBecomeKey)
+            check("the bar sits above normal windows", app.bar.level == .statusBar, "level \(app.bar.level.rawValue)")
             check("the private focus and show-desktop calls exist", Private.missing.isEmpty, Private.missing.joined(separator: ", "))
 
             // Which view a click lands on: SwiftUI for the orb and clock, a button's own
@@ -72,7 +73,8 @@ enum SelfTest {
             start.query = ""
             app.startMenu.open()
             try? await Task.sleep(for: .seconds(0.3))
-            check("the Start menu opens and takes keys", app.startMenu.isOpen && NSApp.keyWindow is GlassPanel)
+            check("the Start menu opens and takes keys", app.startMenu.isOpen && NSApp.keyWindow is GlassPanel,
+                  "open \(app.startMenu.isOpen), key window \(NSApp.keyWindow.map { String(describing: type(of: $0)) } ?? "none"), active \(NSApp.isActive)")
             check("typing goes to the search field", app.startMenu.searchHasFocus,
                   "field \(app.startMenu.model.field == nil ? "missing" : "exists"), first responder \(NSApp.keyWindow?.firstResponder.map { String(describing: type(of: $0)) } ?? "none")")
             app.startMenu.toggle()
@@ -102,6 +104,47 @@ enum SelfTest {
             control.hideDock()
             control.restoreDock()
             check("Restore Dock puts back the exact settings", fake.autohide == false && fake.autohideDelay == 0.2)
+
+            // S-017: full screen, driven by hand so no real app has to go full screen.
+            if let presenter = app.barPresenter, let screen = NSScreen.screens.first?.frame {
+                let panels: [NSWindow] = [app.bar] + NSApp.windows.filter { $0 is GlassPanel && $0 !== app.bar }
+                check("the bar and its popovers can appear over full-screen apps",
+                      panels.allSatisfy { $0.collectionBehavior.contains(.fullScreenAuxiliary) })
+                let detected = await FullScreenDetector.mainScreenIsFullScreen(
+                    screenSize: screen.size, frontPID: NSWorkspace.shared.frontmostApplication?.processIdentifier)
+                print("INFO full screen detected right now: \(detected)")
+
+                presenter.detectionEnabled = false
+                let edge = NSPoint(x: screen.midX, y: screen.minY)
+                let away = NSPoint(x: screen.midX, y: screen.midY)
+                let t = ProcessInfo.processInfo.systemUptime
+                presenter.setFullScreen(true)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("in full screen the bar hides", !presenter.isShown && !app.bar.isVisible,
+                  "shown \(presenter.isShown) visible \(app.bar.isVisible) start \(app.startMenu.isOpen) preview \(app.preview.isVisible) calendar \(app.calendar.isOpen)")
+                presenter.poll(pointer: away, now: t + 1)
+                presenter.poll(pointer: edge, now: t + 2)
+                presenter.poll(pointer: edge, now: t + 2.1)
+                check("a quick touch of the bottom edge does not show it", !presenter.isShown)
+                presenter.poll(pointer: edge, now: t + 2.3)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("resting on the bottom edge slides the bar up",
+                      presenter.isShown && app.bar.isVisible && abs(app.bar.frame.minY - screen.minY) < 1)
+                presenter.poll(pointer: away, now: t + 3)
+                presenter.poll(pointer: away, now: t + 3.7)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("moving away hides it again", !presenter.isShown && !app.bar.isVisible)
+                app.startMenu.open()
+                presenter.poll(pointer: away, now: t + 4)
+                presenter.poll(pointer: away, now: t + 6)
+                check("the bar stays up while the Start menu is open", presenter.isShown)
+                app.startMenu.close()
+                presenter.setFullScreen(false)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("leaving full screen brings the bar back",
+                      presenter.isShown && app.bar.isVisible && abs(app.bar.frame.minY - screen.minY) < 1 && app.bar.alphaValue > 0.99)
+                presenter.detectionEnabled = true
+            }
 
             // S-016
             app.settings.barSize = .small

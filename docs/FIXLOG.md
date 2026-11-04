@@ -10,3 +10,15 @@
 - Symptom: closing on an outside click relied only on the panel losing key, which a non-activating panel does not always do.
 - Fix: a global mouse-down monitor closes the menu while it is open, as the calendar does.
 - Rule: every transient panel closes on a global mouse-down monitor, not on resignKey alone.
+
+## The bar and popovers sat at the floating level, not the status-bar level
+- Symptom: the window server listed the bar at layer 3 instead of 25, so it was lower than intended.
+- Cause: `GlassPanel` set `level`, then `isFloatingPanel = true`, which resets the level to `.floating`.
+- Fix: set `isFloatingPanel` first. The self-test checks `bar.level == .statusBar`.
+- Rule: set `isFloatingPanel` before `level`, and check the level the window server reports.
+
+## Full screen not detected without Accessibility
+- Symptom: with a real full-screen window, the bar stayed up.
+- Cause: the fallback looked for a window covering the whole screen, but this Mac's full-screen windows start 30 pt down, the same bounds as a zoomed window. The ad hoc build had no Accessibility, so the AXFullScreen check could not run.
+- Fix: ask SkyLight for the main display's Space type (4 = full screen) first; AX and bounds are fallbacks.
+- Rule: detect full screen from the Space, never from window bounds alone.
