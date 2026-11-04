@@ -28,6 +28,7 @@ The brief is in [BRIEF.md](BRIEF.md) and the stories in [STORIES.md](STORIES.md)
 | Sleep | `pmset sleepnow` via `Process`, or IOKit `IOPMSleepSystem` | None |
 | Restart, shut down, log out | `NSAppleScript`: `tell application "System Events" to restart` (and `shut down`, `log out`) | Automation of System Events |
 | Lock | ⌃⌘Q posted with `CGEvent` | Accessibility |
+| Mission Control | `NSWorkspace.openApplication` on /System/Applications/Mission Control.app, as the Dock does; fallback `CoreDockSendNotification("com.apple.expose.awake")` | None |
 | Show desktop | private `CoreDockSendNotification("com.apple.showdesktop.awake")`, looked up with `dlsym`; fallback: hide all other apps with `NSRunningApplication.hide()` | None |
 | Volume | CoreAudio `kAudioHardwareServiceDeviceProperty_VirtualMainVolume` on the default output, with a property listener; the Sound popover sets it and `kAudioDevicePropertyMute` | None |
 | Wi-Fi on/off | CoreWLAN `CWWiFiClient.shared().interface()`, `powerOn()`, `setPower(_:)`; `ssid()` is nil without Location access | None |
@@ -67,6 +68,7 @@ Main types:
 - **Name.** Everything the app shows says "Superbar": "Superbar Settings…", "Pin to Superbar", "Unpin from Superbar". Never "Taskbar" or "Windows".
 - **Tray.** Each icon opens a popover above it; a second click, a click elsewhere, or any other bar action closes it. Wi-Fi: on/off switch, connection status, Wi-Fi Settings…. Sound: mute button, volume slider, percent, Sound Settings…. Battery: charge, charging or on battery, time left, Battery Settings…. Network shows Network Settings… on a Mac without Wi-Fi.
 - **Clock.** Time over the short date, updated at the start of each minute (not on a 1 s timer). Click shows a month calendar in a popover.
+- **Mission Control.** A button right after the Start orb (40 pt wide, 32 pt on the small bar) opens Mission Control and closes any open popover.
 - **Show desktop.** Click the strip at the far right to show the desktop; click again to bring the windows back.
 - **The bar and other windows.** macOS has no public API to reserve screen space, so zoomed and "Fill" windows reach the bottom of the screen and slide under the bar. Version one draws the bar above them and says so in Settings. With "Hide the macOS Dock" on, nothing else uses the bottom edge.
 - **Full screen.** While the main display shows a full-screen Space, the bar hides. Resting the pointer on the bottom edge for 0.2 s slides it up over the app, like the Dock; it slides away 0.6 s after the pointer leaves it. It stays up while the Start menu, a preview, the calendar, or a menu is open, and ⌃⎋ shows it with the Start menu. Checked on every Space change and app switch, again 0.7 s later, and every 2 s. The Start menu, previews, and calendar also join full-screen Spaces (`fullScreenAuxiliary`).

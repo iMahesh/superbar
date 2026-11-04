@@ -19,6 +19,7 @@ struct TaskbarView: View {
             HStack(spacing: 0) {
                 StartOrb(size: m.orb) { model.onToggleStart() }
                     .padding(.horizontal, Space.xs)
+                MissionControlButton(metrics: m) { model.openMissionControl() }
                 AppStrip(model: model, metrics: m, interactive: interactive)
                 Spacer(minLength: Space.sm)
                 TrayView(model: model, tray: tray, metrics: m, interactive: interactive)
@@ -174,6 +175,31 @@ struct OrbArt: View {
                 .frame(width: size * 0.42, height: size * 0.42)
         }
         .frame(width: size, height: size)
+    }
+}
+
+/// Opens Mission Control, like the Dock's Mission Control app.
+struct MissionControlButton: View {
+    let metrics: BarMetrics
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+        Image(systemName: "rectangle.3.group")
+            .font(.system(size: metrics.clockFont + 4))
+            .foregroundStyle(.primary)
+            .frame(width: metrics.missionControlWidth - Space.xs, height: metrics.height - Space.sm)
+            .background(shape.fill(.white.opacity(hovered ? 0.16 : 0)))
+            .overlay(shape.strokeBorder(.white.opacity(hovered ? 0.3 : 0), lineWidth: 1))
+            .frame(width: metrics.missionControlWidth, height: metrics.height)
+            .contentShape(Rectangle())
+            .onHover { hovered = $0 }
+            .onTapGesture(perform: action)
+            .help("Mission Control")
+            .accessibilityElement()
+            .accessibilityLabel("Mission Control")
+            .accessibilityAddTraits(.isButton)
     }
 }
 

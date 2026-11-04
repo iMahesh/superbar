@@ -154,6 +154,15 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-018 Mission Control from the bar
+As the user, I click the button right after the Start orb and Mission Control opens.
+Depends: S-001
+Acceptance:
+- [self-test] A click there reaches the Mission Control button, the first app button still gets its own clicks, and Mission Control's app exists.
+- [snap] The button sits between the orb and the first app, on the normal and the small bar.
+- [manual] One click opens Mission Control; Esc or a second click closes it.
+Status: built
+
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek

@@ -349,6 +349,22 @@ final class TaskbarModel {
         return menu
     }
 
+    // MARK: Mission Control
+
+    static let missionControlURL = URL(fileURLWithPath: "/System/Applications/Mission Control.app")
+
+    /// Opens Mission Control the way the Dock's Mission Control app does. No permission needed.
+    func openMissionControl() {
+        onCloseTransient()
+        if FileManager.default.fileExists(atPath: Self.missionControlURL.path) {
+            let config = NSWorkspace.OpenConfiguration()
+            config.addsToRecentItems = false
+            NSWorkspace.shared.openApplication(at: Self.missionControlURL, configuration: config) { _, _ in }
+        } else {
+            _ = Private.showMissionControl()
+        }
+    }
+
     // MARK: Show desktop
 
     func toggleShowDesktop() {

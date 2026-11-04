@@ -10,7 +10,7 @@ The Dock, for people who think in taskbars. Also uBar.
    click the active one to minimize it, click a grouped app to pick one of its windows.
 2. Hover a button to see live previews of that app's windows, and close one from there.
 3. Press the Start button (or ⌃⎋) to search and open apps, reach common folders, and
-   sleep, restart, or shut down.
+   sleep, restart, or shut down. The button next to it opens Mission Control.
 4. Read the time and date, volume, network, and battery at a glance on the right, and click
    each to change it: Wi-Fi on or off, volume and mute, battery details.
 

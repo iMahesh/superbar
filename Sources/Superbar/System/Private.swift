@@ -91,6 +91,13 @@ nonisolated enum Private {
         _ = postEventRecordTo(&psn, &bytes)
     }
 
+    /// Mission Control through the Dock, if its app is ever missing.
+    static func showMissionControl() -> Bool {
+        guard let coreDockSend else { return false }
+        coreDockSend("com.apple.expose.awake" as CFString, 0)
+        return true
+    }
+
     /// Toggles the Dock's "show desktop". Returns false when the call is missing.
     static func toggleShowDesktop() -> Bool {
         guard let coreDockSend else { return false }

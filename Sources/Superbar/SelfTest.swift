@@ -43,7 +43,10 @@ enum SelfTest {
                 @MainActor func hit(_ x: CGFloat) -> NSView? { content.hitTest(NSPoint(x: x, y: y)) }
                 let orb = hit(Space.xs + m.orb / 2)
                 check("a click on the orb reaches the orb", !(orb is MouseCatcher.CatcherView), "\(type(of: orb))")
-                let button = hit(m.orb + Space.xs * 2 + m.buttonWidth / 2)
+                let mission = hit(m.orb + Space.xs * 2 + m.missionControlWidth / 2)
+                check("a click on Mission Control reaches its button", !(mission is MouseCatcher.CatcherView), "\(type(of: mission))")
+                check("Mission Control's app is there to open", FileManager.default.fileExists(atPath: TaskbarModel.missionControlURL.path))
+                let button = hit(m.appStripStart + m.buttonWidth / 2)
                 check("a click on the first app reaches its button",
                       button is MouseCatcher.CatcherView && button?.frame.width == m.buttonWidth, "\(type(of: button)) \(button?.frame.width ?? 0)")
                 let empty = hit(content.bounds.width * 0.6)

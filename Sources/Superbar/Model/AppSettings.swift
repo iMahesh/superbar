@@ -19,6 +19,11 @@ struct BarMetrics {
     let clockFont: CGFloat
     let showDesktopWidth: CGFloat = 10
 
+    /// The Mission Control button after the orb.
+    var missionControlWidth: CGFloat { height < 40 ? 32 : 40 }
+    /// Where the first app button starts: after the orb, its padding, and Mission Control.
+    var appStripStart: CGFloat { orb + Space.xs * 2 + missionControlWidth }
+
     static func of(_ size: BarSize) -> BarMetrics {
         switch size {
         case .normal: BarMetrics(height: 40, buttonWidth: 56, icon: 32, orb: 40, clockFont: 12)

@@ -137,7 +137,7 @@ enum Snapshot {
 
     private static func buttonRect(_ app: AppDelegate, index: Int) -> NSRect {
         let m = app.settings.metrics
-        let x = (app.bar?.frame.minX ?? 0) + m.orb + Space.xs * 2 + CGFloat(index) * m.buttonWidth
+        let x = (app.bar?.frame.minX ?? 0) + m.appStripStart + CGFloat(index) * m.buttonWidth
         return NSRect(x: x, y: app.bar?.frame.minY ?? 0, width: m.buttonWidth, height: m.height)
     }
 
