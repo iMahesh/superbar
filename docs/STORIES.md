@@ -154,6 +154,16 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-019 Keep windows above Superbar
+As the user, my windows end at the top of Superbar, so nothing at the bottom of an app (like Google Sheets' sheet tabs) hides behind it.
+Depends: S-001, S-008
+Acceptance:
+- [unit] WorkArea moves a window with room above up unchanged, trims a zoomed window to end at the bar, and leaves windows that fit, sit on other screens, or would get too short alone.
+- [manual] A window whose bottom is under the bar moves up within 2 s of opening, and a zoomed browser window ends at the bar.
+- [manual] Dragging a window partly under the bar is not fought; resizing it under the bar is.
+- [manual] Turning off "Keep windows above Superbar" stops it.
+Status: built
+
 ### S-018 Mission Control from the bar
 As the user, I click the button right after the Start orb and Mission Control opens.
 Depends: S-001
