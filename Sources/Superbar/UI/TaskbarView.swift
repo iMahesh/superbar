@@ -87,7 +87,7 @@ struct AppButton: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
         ZStack {
-            if app.isRunning {
+            if app.showsFrame {
                 // Grouped: a second frame edge behind, like stacked buttons.
                 if app.windows.count > 1 {
                     shape.strokeBorder(.white.opacity(0.18), lineWidth: 1)

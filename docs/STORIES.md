@@ -166,6 +166,7 @@ Acceptance:
   - a window plus a floating panel: "1 window".
   - pinned: "1 window", then "0 windows" after its last window closed, then "Not running" after it quit, and after Superbar restarted.
   - Accessibility off: unpinned running apps keep their buttons ("Running").
+- [snap] Only an app with a window (or a running app whose windows are unknown) gets the raised button frame; a running app with no window, like Finder with only the desktop, looks like a plain pin.
 - Not verified: more than one display (this Mac has one; Superbar draws one bar, on the main display, from one list).
 Status: built
 

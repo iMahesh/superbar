@@ -22,6 +22,9 @@ struct TaskbarApp: Identifiable {
     var glowColor: Color
 
     var isRunning: Bool { pid != nil }
+    /// Gets the raised button frame: it has a window, or it runs and its windows are unknown.
+    /// A running app with no window (Finder with only the desktop) looks like a plain pin.
+    var showsFrame: Bool { isRunning && (!windowsKnown || !windows.isEmpty) }
     var visibleWindows: [AppWindow] { windows.filter { !$0.isMinimized } }
 }
 
