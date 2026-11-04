@@ -27,3 +27,8 @@
 - Symptom: with Accessibility granted and Settings open, Superbar quit with SIGTRAP in `NSWMWindowCoordinator` under `FitWorker.fitNow`.
 - Cause: activating Superbar (opening Settings) sent `didActivateApplication` for its own pid, so WindowFitter scanned and resized Superbar's own window through AX on a background thread. AppKit traps on that.
 - Fix: WindowFitter skips Superbar's own pid in `scan(pid:)` and `windowChanged`.
+
+## Settings sometimes opened behind other apps (2026-11-04)
+- Symptom: "Superbar Settings…" from the bar menu sometimes left the window behind the app in front, so it looked like nothing happened.
+- Cause: Superbar is an accessory app (no Dock icon). Since macOS 14 `NSApp.activate()` is only a request, and for an accessory app started from a non-activating panel it is often refused.
+- Fix: while Settings is open Superbar becomes a regular app (`setActivationPolicy(.regular)`), and `show()` also asks the window server to front the window (`Private.bringToFront`). It goes back to accessory when Settings closes.

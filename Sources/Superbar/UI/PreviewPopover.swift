@@ -29,6 +29,8 @@ final class PreviewController {
     }
 
     func buttonHover(_ id: String, inside: Bool, rect: NSRect) {
+        // The Settings button has one window, already in sight or one click away: no preview.
+        if inside, id == TaskbarModel.settingsID { return }
         if inside {
             hideTask?.cancel()
             showTask?.cancel()

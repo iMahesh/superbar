@@ -103,6 +103,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.trayPopovers.toggle(item, anchor: rect)
         }
         model.onOpenSettings = { [weak self] in self?.settingsWindow.show() }
+        model.settingsState = settingsState
+        model.onSettingsButton = { [weak self] in self?.settingsWindow.toggleFromBar() }
+        model.onCloseSettings = { [weak self] in self?.settingsWindow.close() }
         model.onButtonHover = { [weak self] id, inside, rect in self?.preview.buttonHover(id, inside: inside, rect: rect) }
         model.onPick = { [weak self] id, rect in self?.preview.showNow(id, anchor: rect) }
         model.onCloseTransient = { [weak self] in

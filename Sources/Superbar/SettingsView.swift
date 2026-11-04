@@ -14,6 +14,10 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 @Observable
 final class SettingsState {
     var tab: SettingsTab = .general
+    /// The window's state, for its button on the bar (TaskbarModel).
+    var isOpen = false
+    var isMinimized = false
+    var windowNumber = 0
 }
 
 /// The Settings window, made by hand: an accessory app has no Settings scene to open.
@@ -29,14 +33,36 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     var settingsWindow: NSWindow? { window }
 
+    /// While Settings is open Superbar is a regular app, so macOS lets it come to the
+    /// front (an accessory app's activate() is often refused, leaving the window behind
+    /// other apps), and the window can be minimized and switched to like any app's.
     func show(tab: SettingsTab? = nil) {
         if let tab { state.tab = tab }
         let window = self.window ?? make()
         self.window = window
         Permissions.shared.settingsVisible = true
         Permissions.shared.refresh()
-        NSApp.activate()
+        if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
+        if window.isMiniaturized { window.deminiaturize(nil) }
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+        // Ask the window server too: activate() alone is only a request.
+        _ = Private.bringToFront(pid: getpid(), windowID: CGWindowID(window.windowNumber))
+        state.isOpen = true
+        state.isMinimized = false
+        state.windowNumber = window.windowNumber
+    }
+
+    /// Is it the window in front, in the active app?
+    var isFrontmost: Bool { NSApp.isActive && window?.isKeyWindow == true && window?.isMiniaturized == false }
+
+    func minimize() { window?.miniaturize(nil) }
+
+    func close() { window?.performClose(nil) }
+
+    /// A click on its bar button, like any app's: front it, or minimize it when it is in front.
+    func toggleFromBar() {
+        isFrontmost ? minimize() : show()
     }
 
     private func make() -> NSWindow {
@@ -44,7 +70,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         host.sizingOptions = .preferredContentSize
         let window = NSWindow(contentViewController: host)
         window.title = "Superbar Settings"
-        window.styleMask = [.titled, .closable]
+        window.styleMask = [.titled, .closable, .miniaturizable]
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.center()
@@ -53,7 +79,15 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         Permissions.shared.settingsVisible = false
+        state.isOpen = false
+        state.isMinimized = false
+        // Back to a bar-only app: no Dock icon, no menu bar.
+        NSApp.setActivationPolicy(.accessory)
     }
+
+    func windowDidMiniaturize(_ notification: Notification) { state.isMinimized = true }
+    func windowDidDeminiaturize(_ notification: Notification) { state.isMinimized = false }
+    func windowDidBecomeKey(_ notification: Notification) { state.isMinimized = false }
 }
 
 struct SettingsView: View {

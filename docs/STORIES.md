@@ -154,6 +154,14 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-022 Settings acts like an app window
+As the user, Superbar Settings opens in front of other apps, has a button on the bar, and can be minimized.
+Depends: S-001, S-014
+Acceptance:
+- [self-test] Settings can be minimized; while open Superbar is a regular app and Settings has a bar button; minimized it keeps the button, and the button restores it; closing removes the button and the Dock icon.
+- [manual] Verified 2026-11-04: opened from the bar's right-click menu while Claude was in front, Settings came to the front 3 of 3 times. Its button brought it forward, minimized it when it was in front, and restored it.
+Status: built
+
 ### S-021 A bar on every display
 As the user with a second display connected, each display has its own Superbar along its bottom, with the same apps.
 Depends: S-001, S-017, S-019, S-020

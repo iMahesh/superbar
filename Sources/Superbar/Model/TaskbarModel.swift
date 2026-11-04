@@ -56,6 +56,10 @@ final class TaskbarModel {
     @ObservationIgnored var onToggleCalendar: () -> Void = {}
     @ObservationIgnored var onTrayClick: (_ item: TrayItem, _ rect: NSRect) -> Void = { _, _ in }
     @ObservationIgnored var onOpenSettings: () -> Void = {}
+    /// The Settings window's own button: its state, and what a click or the menu does.
+    @ObservationIgnored var settingsState: SettingsState?
+    @ObservationIgnored var onSettingsButton: () -> Void = {}
+    @ObservationIgnored var onCloseSettings: () -> Void = {}
     @ObservationIgnored var onButtonHover: (_ id: String, _ inside: Bool, _ rect: NSRect) -> Void = { _, _, _ in }
     @ObservationIgnored var onPick: (_ id: String, _ rect: NSRect) -> Void = { _, _ in }
     @ObservationIgnored var onCloseTransient: () -> Void = {}
@@ -77,6 +81,10 @@ final class TaskbarModel {
 
     var apps: [TaskbarApp] {
         if let staticApps { return staticApps }
+        return runningAndPinned + [settingsApp].compactMap { $0 }
+    }
+
+    private var runningAndPinned: [TaskbarApp] {
         var byID: [String: NSRunningApplication] = [:]
         for app in running where byID[key(app)] == nil { byID[key(app)] = app }
         let order = AppOrdering.order(pinned: pins, running: running.map {
@@ -104,6 +112,22 @@ final class TaskbarModel {
     }
 
     func app(_ id: String) -> TaskbarApp? { apps.first { $0.id == id } }
+
+    /// Superbar's own button, while its Settings window is open. Superbar never reads or
+    /// moves its own windows through AX (AppKit traps on that off the main thread), so
+    /// this button is made from the window itself and its clicks go to the controller.
+    static let settingsID = "superbar.settings"
+
+    private var settingsApp: TaskbarApp? {
+        guard let state = settingsState, state.isOpen else { return nil }
+        let window = AppWindow(windowID: CGWindowID(state.windowNumber), element: AXUIElementCreateApplication(getpid()),
+                               title: "Superbar Settings", isMinimized: state.isMinimized)
+        let icon = NSApp.applicationIconImage ?? NSImage()
+        return TaskbarApp(id: Self.settingsID, bundleID: Bundle.main.bundleIdentifier, pid: getpid(), name: "Superbar Settings",
+                          icon: icon, url: nil, isPinned: false,
+                          isActive: frontPID == getpid() && !state.isMinimized, isHidden: false,
+                          windows: [window], glowColor: IconCache.shared.glow(for: Self.settingsID, icon: icon))
+    }
 
     private func key(_ app: NSRunningApplication) -> String {
         app.bundleIdentifier ?? "pid:\(app.processIdentifier)"
@@ -151,6 +175,7 @@ final class TaskbarModel {
     /// `frontAtMouseDown` is read at mouse-down, before anything can change focus.
     func click(_ id: String, frontAtMouseDown: pid_t?, shift: Bool, rect: NSRect) {
         onCloseTransient()
+        if id == Self.settingsID { onSettingsButton(); return }
         guard let app = app(id) else { return }
         if shift { newWindow(id); return }
         guard let pid = app.pid else { launch(app); return }
@@ -258,6 +283,7 @@ final class TaskbarModel {
     /// Middle click or ⇧click: a new window, with ⌘N after the app is in front.
     func newWindow(_ id: String) {
         onCloseTransient()
+        if id == Self.settingsID { onOpenSettings(); return }
         guard let app = app(id) else { return }
         guard let pid = app.pid, let url = app.url else { launch(app); return }
         let config = NSWorkspace.OpenConfiguration()
@@ -297,6 +323,7 @@ final class TaskbarModel {
     /// Drop after a drag: move a pinned app, or pin a running one dropped among the pins.
     func endDrag(_ id: String, offset: CGFloat, stride: CGFloat) {
         defer { drag = nil }
+        guard id != Self.settingsID else { return }   // it is not an app to pin or reorder
         let list = apps
         guard let from = list.firstIndex(where: { $0.id == id }), stride > 0 else { return }
         let target = max(0, min(list.count - 1, Int((CGFloat(from) + offset / stride).rounded())))
@@ -319,6 +346,13 @@ final class TaskbarModel {
 
     func menu(for id: String) -> NSMenu {
         let menu = NSMenu()
+        if id == Self.settingsID {
+            menu.addItem(ActionItem("Superbar Settings") { [weak self] in self?.onOpenSettings() })
+            menu.addItem(.separator())
+            menu.addItem(ActionItem("Close Window") { [weak self] in self?.onCloseSettings() })
+            menu.addItem(ActionItem("Quit Superbar") { NSApp.terminate(nil) })
+            return menu
+        }
         guard let app = app(id) else { return menu }
         for window in app.windows {
             let title = window.title.isEmpty ? app.name : window.title

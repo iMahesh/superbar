@@ -188,6 +188,25 @@ enum SelfTest {
             app.settings.barSize = .normal
             app.layoutBar()
 
+            // S-022: Settings is a window like any app's.
+            app.settingsWindow.show()
+            try? await Task.sleep(for: .milliseconds(300))
+            let settingsWindow = app.settingsWindow.settingsWindow
+            check("Settings can be minimized", settingsWindow?.styleMask.contains(.miniaturizable) == true)
+            check("while Settings is open Superbar is a regular app", NSApp.activationPolicy() == .regular)
+            check("open Settings has a button on the bar", model.apps.contains { $0.id == TaskbarModel.settingsID })
+            settingsWindow?.miniaturize(nil)
+            try? await Task.sleep(for: .milliseconds(800))
+            check("minimized Settings keeps its button, shown minimized",
+                  model.apps.first { $0.id == TaskbarModel.settingsID }?.windows.first?.isMinimized == true)
+            app.settingsWindow.toggleFromBar()
+            try? await Task.sleep(for: .milliseconds(800))
+            check("its button restores it", settingsWindow?.isMiniaturized == false && settingsWindow?.isVisible == true)
+            app.settingsWindow.close()
+            try? await Task.sleep(for: .milliseconds(300))
+            check("closing Settings removes its button and the Dock icon",
+                  !model.apps.contains { $0.id == TaskbarModel.settingsID } && NSApp.activationPolicy() == .accessory)
+
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }
