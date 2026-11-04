@@ -160,9 +160,10 @@ Depends: S-001, S-017, S-019, S-020
 Acceptance:
 - [self-test] One bar per connected display, each spanning the bottom of its display.
 - [unit] WorkArea keeps a window on a second screen above that screen's bar, and the main screen's area leaves it alone.
-- [manual] Verified 2026-11-04 with the built-in display and an LG UltraFine: two bars (1440 and 1920 pt wide) listing the same apps in the same order.
-- [manual] Hover on one bar lights only that bar; Start and the calendar open on the display under the pointer; a tray popover opens above its icon.
-- [manual] A full-screen app on one display hides only that display's bar.
+- [manual] Verified 2026-11-04 with the built-in display and an LG UltraFine: two bars (1440 and 1920 pt wide) listing the same apps and window counts in the same order.
+- [manual] Start opens on the display whose orb was clicked (verified on both). A hover preview on the LG bar opens centered over its button (verified). Not yet tried: the calendar and tray popovers on the LG.
+- [manual] A full-screen app on one display hides only that display's bar. Verified on the LG: its bar hid, the main bar stayed and listed the app, and the LG bar came back when the app quit.
+- [manual] A window under the LG's bar moves up to end above it. Verified: bottom 0 to 40 pt, height unchanged.
 - [manual] Unplugging a display removes its bar; plugging it in adds one.
 Status: built
 
