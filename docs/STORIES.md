@@ -159,8 +159,8 @@ As the user, my windows end at the top of Superbar, so nothing at the bottom of 
 Depends: S-001, S-008
 Acceptance:
 - [unit] WorkArea moves a window with room above up unchanged, trims a zoomed window to end at the bar, and leaves windows that fit, sit on other screens, or would get too short alone.
-- [manual] A window whose bottom is under the bar moves up within 2 s of opening, and a zoomed browser window ends at the bar.
-- [manual] Dragging a window partly under the bar is not fought; resizing it under the bar is.
+- [manual] A window whose bottom is under the bar moves up within 2 s of opening, and a zoomed browser window ends at the bar. Verified 2026-11-04 with test windows: a 400 pt window moved up to end at the bar; a full-height window kept its top and was trimmed from 869 to 829 pt.
+- [manual] Dragging a window partly under the bar is not fought; resizing it under the bar is. Verified 2026-11-04 for a plain move: the window stayed where it was put.
 - [manual] Turning off "Keep windows above Superbar" stops it.
 Status: built
 
