@@ -16,6 +16,7 @@ behaviors, and gotchas `docs/SPEC.md`. Read SPEC.md before changing behavior.
 - `Sources/Superbar/System/` private calls (SkyLight, `_AXUIElementGetWindow`, CoreDock) looked up with dlsym, permissions, Carbon hotkey, power actions, Dock preferences, `Store` (UserDefaults).
 - `Sources/Superbar/UI/` panels (`GlassPanel`, `MouseCatcher`), the bar, Start menu, preview popover, calendar.
 - `build.sh` builds, signs, and installs `~/Applications/Superbar.app`.
+- `site/` the static website for GitHub Pages (no build step). `assets/app.js` holds the live demo; its rules are JS ports of `ClickResolver`, `SearchRanker`, `AppVisibility`, `EdgeReveal` timings, and `WorkArea.fit`, so change them together. Screenshots in `site/assets/img/` come from `tools/snap.sh`; never use ones that show a username, Wi-Fi name, or other personal detail. `.github/workflows/pages.yml` deploys it on pushes to `main`. Preview: `python3 -m http.server 8765 --directory site`.
 
 ## Build and check
 
