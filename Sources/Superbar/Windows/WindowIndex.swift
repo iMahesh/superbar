@@ -72,6 +72,7 @@ nonisolated final class AXObserverHost: @unchecked Sendable {
         kAXWindowCreatedNotification, kAXUIElementDestroyedNotification,
         kAXWindowMiniaturizedNotification, kAXWindowDeminiaturizedNotification,
         kAXTitleChangedNotification, kAXFocusedWindowChangedNotification,
+        kAXWindowResizedNotification,
     ]
 
     private init() {
@@ -131,6 +132,15 @@ nonisolated final class AXObserverHost: @unchecked Sendable {
         AXUIElementGetPid(element, &pid)
         let minimized = (notification as String) == kAXWindowMiniaturizedNotification
         let windowID = minimized ? Private.windowID(of: element) : nil
+        let name = notification as String
+        // A new or resized window may reach under the bar (WindowFitter). Moves alone never
+        // trigger it, so a window being dragged is not fought.
+        if name == kAXWindowCreatedNotification || name == kAXWindowResizedNotification {
+            let ref = AXRef(element: element)
+            Task { @MainActor in WindowFitter.shared.windowChanged(ref) }
+        }
+        // Resizes are frequent and do not change the window list.
+        guard name != kAXWindowResizedNotification else { return }
         Task { @MainActor in WindowIndex.shared.changed(pid: pid, minimizedWindow: windowID) }
     }
 }

@@ -107,6 +107,7 @@ struct GeneralSettings: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
+                Toggle("Keep windows above Superbar", isOn: $settings.keepWindowsAbove)
                 Toggle("Hide the macOS Dock", isOn: Binding(
                     get: { dock.isHidden },
                     set: { $0 ? dock.requestHide() : dock.restore() }))
@@ -114,9 +115,9 @@ struct GeneralSettings: View {
                     Button("Restore Dock") { dock.restore() }
                 }
             } header: {
-                Text("Dock")
+                Text("Windows and Dock")
             } footer: {
-                Text("macOS can't reserve the bottom of the screen, so zoomed windows reach under Superbar. Hiding the Dock keeps the bottom edge for Superbar.")
+                Text("macOS can't reserve the bottom of the screen, so Superbar moves or trims windows that reach under it, like zoomed windows. This needs Accessibility. Hiding the Dock keeps the bottom edge for Superbar.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Start menu") {
@@ -153,7 +154,7 @@ struct PermissionsSettings: View {
         Form {
             Section {
                 PermissionRow(name: "Accessibility", isOn: permissions.accessibility,
-                              detail: "Without it, Superbar can't list, focus, minimize, or close windows.",
+                              detail: "Without it, Superbar can't list, focus, minimize, or close windows, or keep them out from under the bar.",
                               grant: permissions.grantAccessibility)
                 PermissionRow(name: "Screen Recording", isOn: permissions.screenRecording,
                               detail: "Without it, previews show the app icon and some window titles are missing.",

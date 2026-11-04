@@ -62,15 +62,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         model.startWatching()
         presenter.start()
+        startWindowFitter(presenter)
         HotkeyCenter.shared.onStart = { [weak self] in self?.toggleStart() }
         HotkeyCenter.shared.register(settings.startHotkey)
-        permissions.onAccessibilityGranted = { [weak self] in self?.model.accessibilityGranted() }
+        permissions.onAccessibilityGranted = { [weak self] in
+            self?.model.accessibilityGranted()
+            WindowFitter.shared.scanAll()
+        }
         permissions.start()
         if !permissions.accessibility { settingsWindow.show(tab: .permissions) }
 
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { SuperbarMain.delegate.layoutBar() }
+            MainActor.assumeIsolated {
+                SuperbarMain.delegate.layoutBar()
+                WindowFitter.shared.scanAll()
+            }
         }
         observeBarSize()
 
@@ -109,6 +116,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Power.onAutomationDenied = { [weak self] in self?.settingsWindow.show(tab: .permissions) }
     }
 
+    /// Keeps windows out from under the bar: on launch, when apps launch or come to the
+    /// front, and when the bar or the screen changes. Window opens and resizes come from
+    /// the AX observers (AXObserverHost).
+    private func startWindowFitter(_ presenter: BarPresenter) {
+        let fitter = WindowFitter.shared
+        fitter.isActive = { [unowned self] in settings.keepWindowsAbove && !presenter.isFullScreen }
+        fitter.barHeight = { [unowned self] in settings.metrics.height }
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
+            let pid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
+            MainActor.assumeIsolated { if let pid { WindowFitter.shared.scan(pid: pid) } }
+        }
+        center.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { note in
+            let pid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
+            MainActor.assumeIsolated {
+                guard let pid else { return }
+                // The first window often appears a moment after launch.
+                Task {
+                    for delay in [0.5, 1.5] {
+                        try? await Task.sleep(for: .seconds(delay))
+                        WindowFitter.shared.scan(pid: pid)
+                    }
+                }
+            }
+        }
+        fitter.scanAll()
+    }
+
     func toggleStart() {
         calendar.close()
         trayPopovers.close()
@@ -126,6 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         withObservationTracking { _ = settings.barSize } onChange: {
             Task { @MainActor in
                 SuperbarMain.delegate.layoutBar()
+                WindowFitter.shared.scanAll()
                 SuperbarMain.delegate.observeBarSize()
             }
         }

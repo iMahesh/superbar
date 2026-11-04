@@ -20,6 +20,7 @@ enum Store {
         static let startPins = "startPinnedApps"
         static let recentApps = "recentApps"
         static let barSize = "barSize"
+        static let keepWindowsAbove = "keepWindowsAbove"
         static let startHotkey = "startHotkey"
     }
 }

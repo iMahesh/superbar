@@ -42,6 +42,14 @@ final class AppSettings {
         didSet { defaults.set(barSize.rawValue, forKey: Store.Key.barSize) }
     }
 
+    /// Move or trim windows so nothing hides under the bar. Default on.
+    var keepWindowsAbove: Bool {
+        didSet {
+            defaults.set(keepWindowsAbove, forKey: Store.Key.keepWindowsAbove)
+            if keepWindowsAbove { WindowFitter.shared.scanAll() }
+        }
+    }
+
     var startHotkey: KeyCombo {
         didSet {
             if let data = try? JSONEncoder().encode(startHotkey) { defaults.set(data, forKey: Store.Key.startHotkey) }
@@ -57,6 +65,7 @@ final class AppSettings {
 
     init() {
         barSize = BarSize(rawValue: defaults.string(forKey: Store.Key.barSize) ?? "") ?? .normal
+        keepWindowsAbove = defaults.object(forKey: Store.Key.keepWindowsAbove) as? Bool ?? true
         startHotkey = defaults.data(forKey: Store.Key.startHotkey)
             .flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) } ?? .startDefault
     }

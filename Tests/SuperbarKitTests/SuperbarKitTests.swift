@@ -182,3 +182,25 @@ private final class FakeDock: DockPreferences {
     #expect(!ScreenCover.isFullScreen([full], frontPID: 8, screen: screen))
     #expect(!ScreenCover.isFullScreen([zoomed, menuBar], frontPID: 7, screen: screen))
 }
+
+// S-019
+@Test func zoomedWindowIsTrimmedToEndAboveTheBar() {
+    // 1440 by 900 screen, 24 pt menu bar, 40 pt bar: windows must end at 860.
+    let zoomed = CGRect(x: 0, y: 24, width: 1440, height: 876)
+    #expect(WorkArea.fit(zoomed, top: 24, bottom: 860, screenWidth: 1440) == CGRect(x: 0, y: 24, width: 1440, height: 836))
+}
+
+@Test func windowWithRoomAboveMovesUpUnchanged() {
+    let low = CGRect(x: 100, y: 500, width: 600, height: 380)
+    #expect(WorkArea.fit(low, top: 24, bottom: 860, screenWidth: 1440) == CGRect(x: 100, y: 480, width: 600, height: 380))
+}
+
+@Test func windowsThatFitOrAreElsewhereAreLeftAlone() {
+    #expect(WorkArea.fit(CGRect(x: 0, y: 24, width: 800, height: 836), top: 24, bottom: 860, screenWidth: 1440) == nil)
+    // On a screen to the right.
+    #expect(WorkArea.fit(CGRect(x: 1600, y: 24, width: 800, height: 900), top: 24, bottom: 860, screenWidth: 1440) == nil)
+    // Parked below the bar entirely.
+    #expect(WorkArea.fit(CGRect(x: 0, y: 870, width: 800, height: 400), top: 24, bottom: 860, screenWidth: 1440) == nil)
+    // Would become too short.
+    #expect(WorkArea.fit(CGRect(x: 0, y: 800, width: 800, height: 900), top: 790, bottom: 860, screenWidth: 1440) == nil)
+}
