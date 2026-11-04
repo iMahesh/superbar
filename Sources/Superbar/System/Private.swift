@@ -41,11 +41,11 @@ nonisolated enum Private {
          ("SLSSpaceGetType", spaceGetType != nil)].filter { !$0.1 }.map(\.0)
     }
 
-    /// Whether the main display's current Space is a full-screen one (Space type 4),
-    /// as yabai reads it. No permission needed. Nil when the calls are missing.
-    static func mainDisplayIsInFullScreenSpace() -> Bool? {
+    /// Whether a display's current Space is a full-screen one (Space type 4), as yabai
+    /// reads it. No permission needed. Nil when the calls are missing.
+    static func displayIsInFullScreenSpace(_ display: CGDirectDisplayID) -> Bool? {
         guard let mainConnectionID, let displayCurrentSpace, let spaceGetType,
-              let uuid = CGDisplayCreateUUIDFromDisplayID(CGMainDisplayID())?.takeRetainedValue(),
+              let uuid = CGDisplayCreateUUIDFromDisplayID(display)?.takeRetainedValue(),
               let name = CFUUIDCreateString(nil, uuid) else { return nil }
         let connection = mainConnectionID()
         let space = displayCurrentSpace(connection, name)

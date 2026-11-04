@@ -8,11 +8,20 @@ nonisolated struct AXRef: @unchecked Sendable {
     let element: AXUIElement
 }
 
-/// Where windows may go: below the menu bar and above Superbar, on the main screen.
+/// Where windows may go on one screen: below its menu bar and above its Superbar.
+/// AX coordinates (origin at the top left of the main screen).
 nonisolated struct FitArea: Sendable {
     let top: CGFloat
     let bottom: CGFloat
-    let width: CGFloat
+    /// The whole screen, to tell which screen a window is on.
+    let screen: CGRect
+
+    @MainActor
+    static func of(_ screen: NSScreen, barHeight: CGFloat) -> FitArea {
+        let rect = screen.cgFrame
+        let menuBar = screen.frame.maxY - screen.visibleFrame.maxY
+        return FitArea(top: rect.minY + menuBar, bottom: rect.maxY - barHeight, screen: rect)
+    }
 }
 
 /// Moves or trims windows that reach under Superbar (WorkArea.fit). Needs Accessibility.
@@ -22,26 +31,21 @@ nonisolated struct FitArea: Sendable {
 final class WindowFitter {
     static let shared = WindowFitter()
 
-    /// Set by AppDelegate: the setting is on and no full-screen Space is showing.
+    /// Set by AppDelegate: the setting is on.
     var isActive: () -> Bool = { false }
-    var barHeight: () -> CGFloat = { 40 }
+    /// Set by AppDelegate: one area per screen whose bar is not over a full-screen app.
+    var areas: () -> [FitArea] = { [] }
 
     /// Per window, the times Superbar changed it, to stop a tug of war with an app that
     /// resizes itself back: at most 3 changes in 2 s, then hands off for 30 s.
     private var changes: [CFHashCode: [Date]] = [:]
     private var restingUntil: [CFHashCode: Date] = [:]
 
-    var area: FitArea? {
-        guard let screen = NSScreen.screens.first else { return nil }
-        let menuBar = screen.frame.maxY - screen.visibleFrame.maxY
-        return FitArea(top: menuBar, bottom: screen.frame.height - barHeight(), width: screen.frame.width)
-    }
-
     /// One window, after AX said it opened or resized.
     func windowChanged(_ ref: AXRef) {
         var pid: pid_t = 0
         AXUIElementGetPid(ref.element, &pid)
-        guard pid != getpid(), isActive(), AXIsProcessTrusted(), let area else { return }
+        guard pid != getpid(), isActive(), AXIsProcessTrusted(), case let area = areas(), !area.isEmpty else { return }
         let key = CFHash(ref.element)
         let now = Date()
         if let until = restingUntil[key], until > now { return }
@@ -60,7 +64,7 @@ final class WindowFitter {
     func scan(pid: pid_t) {
         // Never Superbar itself: AppKit traps when its own windows are set through AX
         // off the main thread (Settings is activated, and so scanned, like any app).
-        guard pid != getpid(), isActive(), AXIsProcessTrusted(), let area else { return }
+        guard pid != getpid(), isActive(), AXIsProcessTrusted(), case let area = areas(), !area.isEmpty else { return }
         Task { await FitWorker.scan(pid: pid, in: area) }
     }
 
@@ -78,19 +82,19 @@ final class WindowFitter {
 nonisolated enum FitWorker {
     /// Returns true when it moved or resized the window.
     @concurrent
-    static func fit(_ ref: AXRef, in area: FitArea) async -> Bool {
+    static func fit(_ ref: AXRef, in area: [FitArea]) async -> Bool {
         fitNow(ref.element, in: area)
     }
 
     @concurrent
-    static func scan(pid: pid_t, in area: FitArea) async {
+    static func scan(pid: pid_t, in area: [FitArea]) async {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 1.0)
         guard let windows: [AXUIElement] = AXReader.value(app, kAXWindowsAttribute) else { return }
         for window in windows { _ = fitNow(window, in: area) }
     }
 
-    static func fitNow(_ window: AXUIElement, in area: FitArea) -> Bool {
+    static func fitNow(_ window: AXUIElement, in areas: [FitArea]) -> Bool {
         AXUIElementSetMessagingTimeout(window, 1.0)
         let subrole: String? = AXReader.value(window, kAXSubroleAttribute)
         guard subrole == kAXStandardWindowSubrole else { return false }
@@ -103,7 +107,10 @@ nonisolated enum FitWorker {
         AXValueGetValue(positionValue, .cgPoint, &origin)
         AXValueGetValue(sizeValue, .cgSize, &size)
         let frame = CGRect(origin: origin, size: size)
-        guard let target = WorkArea.fit(frame, top: area.top, bottom: area.bottom, screenWidth: area.width) else { return false }
+        // The screen holding the window's middle; one showing a full-screen app has no area.
+        guard let area = areas.first(where: { $0.screen.contains(CGPoint(x: frame.midX, y: frame.midY)) }),
+              let target = WorkArea.fit(frame, top: area.top, bottom: area.bottom,
+                                        minX: area.screen.minX, maxX: area.screen.maxX) else { return false }
         if target.origin != frame.origin {
             var point = target.origin
             if let value = AXValueCreate(.cgPoint, &point) {

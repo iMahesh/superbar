@@ -3,17 +3,17 @@ import ApplicationServices
 import Observation
 import SuperbarKit
 
-/// Is the main screen showing a full-screen app? The Space type from SkyLight first;
+/// Is a screen showing a full-screen app? The Space type from SkyLight first;
 /// then AXFullScreen (needs Accessibility); then a window covering the whole screen.
 /// Off the main thread: the AX fallback can block on a hung app.
 nonisolated enum FullScreenDetector {
+    /// `screen`: the screen in CG coordinates (origin at the top left of the main screen).
     @concurrent
-    static func mainScreenIsFullScreen(screenSize: CGSize, frontPID: pid_t?) async -> Bool {
-        // Best: ask the window server whether the main display shows a full-screen Space.
-        if let answer = Private.mainDisplayIsInFullScreenSpace() { return answer }
-        let screen = CGRect(origin: .zero, size: screenSize)   // the main screen in CG coordinates
+    static func isFullScreen(display: CGDirectDisplayID, screen: CGRect, frontPID: pid_t?) async -> Bool {
+        // Best: ask the window server whether the display shows a full-screen Space.
+        if let answer = Private.displayIsInFullScreenSpace(display) { return answer }
         let windows = onScreenWindows()
-        // The app on top of the main screen: the owner of its front normal window.
+        // The app on top of this screen: the owner of its front normal window.
         let topPID = windows.first { w in
             w.layer == 0 && screen.contains(CGPoint(x: w.bounds.midX, y: w.bounds.midY))
         }?.ownerPID
@@ -22,11 +22,11 @@ nonisolated enum FullScreenDetector {
             for pid in Set(pids) where axFullScreenWindow(pid: pid, on: screen) { return true }
             return false
         }
-        // Without Accessibility: a window that covers the whole main screen.
+        // Without Accessibility: a window that covers the whole screen.
         return pids.contains { ScreenCover.isFullScreen(windows, frontPID: $0, screen: screen) }
     }
 
-    /// AXFullScreen on any of the app's windows on this Space that sits on the main screen.
+    /// AXFullScreen on any of the app's windows on this Space that sits on this screen.
     private static func axFullScreenWindow(pid: pid_t, on screen: CGRect) -> Bool {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 1.0)
@@ -57,47 +57,46 @@ nonisolated enum FullScreenDetector {
     }
 }
 
-/// Places the bar, and over a full-screen app hides it until the pointer rests on
-/// the bottom edge (EdgeReveal), like the Dock.
+/// Places one display's bar, and over a full-screen app on that display hides it
+/// until the pointer rests on its bottom edge (EdgeReveal), like the Dock.
 @Observable
 final class BarPresenter {
     private(set) var isFullScreen = false
     private(set) var isShown = true
+    let displayID: CGDirectDisplayID
+    let panel: GlassPanel
 
-    @ObservationIgnored private let panel: GlassPanel
     @ObservationIgnored private let settings: AppSettings
     @ObservationIgnored var heldOpen: () -> Bool = { false }
+    /// Called when this display enters or leaves full screen (WindowFitter).
+    @ObservationIgnored var onFullScreenChange: () -> Void = {}
     @ObservationIgnored private var reveal = EdgeReveal()
     @ObservationIgnored private var pollTimer: Timer?
     @ObservationIgnored private var checkTimer: Timer?
+    @ObservationIgnored private var observers: [(NotificationCenter, NSObjectProtocol)] = []
     @ObservationIgnored private var menuOpen = false
     @ObservationIgnored private var checking = false
     /// Snapshots and the self-test drive the state by hand.
     @ObservationIgnored var detectionEnabled = true
 
-    init(panel: GlassPanel, settings: AppSettings) {
+    init(panel: GlassPanel, settings: AppSettings, displayID: CGDirectDisplayID) {
         self.panel = panel
         self.settings = settings
+        self.displayID = displayID
     }
 
     func start() {
         let workspace = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.activeSpaceDidChangeNotification, NSWorkspace.didActivateApplicationNotification,
                      NSWorkspace.didTerminateApplicationNotification] {
-            workspace.addObserver(forName: name, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { SuperbarMain.delegate.barPresenter?.checkSoon() }
-            }
+            observe(workspace, name) { $0.checkSoon() }
         }
         // A context menu from the bar keeps it up while open.
-        NotificationCenter.default.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { SuperbarMain.delegate.barPresenter?.menuOpen = true }
-        }
-        NotificationCenter.default.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { SuperbarMain.delegate.barPresenter?.menuOpen = false }
-        }
+        observe(.default, NSMenu.didBeginTrackingNotification) { $0.menuOpen = true }
+        observe(.default, NSMenu.didEndTrackingNotification) { $0.menuOpen = false }
         // Some apps go full screen without a Space change (games with a borderless window).
-        let t = Timer(timeInterval: 2, repeats: true) { _ in
-            MainActor.assumeIsolated { SuperbarMain.delegate.barPresenter?.check() }
+        let t = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.check() }
         }
         t.tolerance = 0.5
         RunLoop.main.add(t, forMode: .common)
@@ -105,9 +104,27 @@ final class BarPresenter {
         check()
     }
 
+    /// The display went away: stop everything and remove the bar.
+    func stop() {
+        for (center, token) in observers { center.removeObserver(token) }
+        observers.removeAll()
+        checkTimer?.invalidate()
+        checkTimer = nil
+        stopPolling()
+        detectionEnabled = false
+        panel.orderOut(nil)
+    }
+
+    private func observe(_ center: NotificationCenter, _ name: Notification.Name, _ action: @escaping @MainActor @Sendable (BarPresenter) -> Void) {
+        let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { if let self { action(self) } }
+        }
+        observers.append((center, token))
+    }
+
     // MARK: Frames
 
-    private var screen: NSScreen? { NSScreen.screens.first }
+    var screen: NSScreen? { NSScreen.screens.first { $0.displayID == displayID } }
 
     private var shownFrame: NSRect {
         guard let f = screen?.frame else { return panel.frame }
@@ -128,18 +145,20 @@ final class BarPresenter {
     /// Right after a Space change, and again once the full-screen animation has settled.
     func checkSoon() {
         check()
-        Task {
+        Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(700))
-            check()
+            self?.check()
         }
     }
 
     func check() {
-        guard detectionEnabled, !checking, let size = screen?.frame.size else { return }
+        guard detectionEnabled, !checking, let rect = screen?.cgFrame else { return }
         checking = true
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        Task {
-            let on = await FullScreenDetector.mainScreenIsFullScreen(screenSize: size, frontPID: front)
+        let display = displayID
+        Task { [weak self] in
+            let on = await FullScreenDetector.isFullScreen(display: display, screen: rect, frontPID: front)
+            guard let self else { return }
             checking = false
             if detectionEnabled { setFullScreen(on) }
         }
@@ -156,12 +175,13 @@ final class BarPresenter {
             stopPolling()
             slide(show: true)
         }
+        onFullScreenChange()
     }
 
     private func startPolling() {
         guard pollTimer == nil else { return }
-        let t = Timer(timeInterval: 1.0 / 30, repeats: true) { _ in
-            MainActor.assumeIsolated { SuperbarMain.delegate.barPresenter?.poll() }
+        let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.poll() }
         }
         RunLoop.main.add(t, forMode: .common)   // .common: keeps running while a menu tracks
         pollTimer = t
@@ -174,8 +194,8 @@ final class BarPresenter {
 
     func poll(pointer: NSPoint = NSEvent.mouseLocation, now: Double = ProcessInfo.processInfo.systemUptime) {
         guard isFullScreen, let frame = screen?.frame else { return }
-        let onMain = pointer.x >= frame.minX && pointer.x < frame.maxX && pointer.y >= frame.minY && pointer.y < frame.maxY
-        let action = reveal.update(pointerHeight: onMain ? Double(pointer.y - frame.minY) : nil,
+        let onScreen = pointer.x >= frame.minX && pointer.x < frame.maxX && pointer.y >= frame.minY && pointer.y < frame.maxY
+        let action = reveal.update(pointerHeight: onScreen ? Double(pointer.y - frame.minY) : nil,
                                    barHeight: Double(settings.metrics.height),
                                    heldOpen: heldOpen() || menuOpen, now: now)
         switch action {
@@ -199,10 +219,10 @@ final class BarPresenter {
             context.timingFunction = CAMediaTimingFunction(name: show ? .easeOut : .easeIn)
             panel.animator().setFrame(target, display: true)
             panel.animator().alphaValue = show ? 1 : 0
-        } completionHandler: {
+        } completionHandler: { [weak self] in
             MainActor.assumeIsolated {
-                guard let presenter = SuperbarMain.delegate.barPresenter, !presenter.isShown else { return }
-                presenter.panel.orderOut(nil)
+                guard let self, !self.isShown else { return }
+                self.panel.orderOut(nil)
             }
         }
     }

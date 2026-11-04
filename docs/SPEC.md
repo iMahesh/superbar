@@ -14,7 +14,7 @@ The brief is in [BRIEF.md](BRIEF.md) and the stories in [STORIES.md](STORIES.md)
 | Part | API | Permission |
 | --- | --- | --- |
 | The bar | `NSPanel` with `[.borderless, .nonactivatingPanel]`, level `.statusBar` (set after `isFloatingPanel`, which resets the level), `collectionBehavior` `[.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]` | None |
-| Full-screen check | private SkyLight `SLSManagedDisplayGetCurrentSpace` + `SLSSpaceGetType` (4 = full screen) for the main display; fallbacks: AX `AXFullScreen`, then a window covering the whole screen | None (AX fallback: Accessibility) |
+| Full-screen check | private SkyLight `SLSManagedDisplayGetCurrentSpace` + `SLSSpaceGetType` (4 = full screen) for each display; fallbacks: AX `AXFullScreen`, then a window covering the whole screen | None (AX fallback: Accessibility) |
 | Running apps | `NSWorkspace.shared.runningApplications` filtered to `.regular`, plus `didLaunch`, `didTerminate`, `didActivate`, `didHide`, `didUnhide` notifications | None |
 | Windows per app | AX `kAXWindowsAttribute` on `AXUIElementCreateApplication(pid)` (includes minimized), matched to `CGWindowListCopyWindowInfo` IDs with private `_AXUIElementGetWindow` | Accessibility |
 | Window titles | AX `kAXTitleAttribute` first, `kCGWindowName` second | Accessibility; Screen Recording for the CG name |
@@ -72,7 +72,8 @@ Main types:
 - **Mission Control.** A button right after the Start orb (40 pt wide, 32 pt on the small bar) opens Mission Control and closes any open popover.
 - **Show desktop.** Click the strip at the far right to show the desktop; click again to bring the windows back.
 - **The bar and other windows.** macOS has no public API to reserve screen space, so Superbar keeps windows out from under the bar itself (`WindowFitter`, rule in `WorkArea.fit`): a window that reaches under it moves up when there is room above, or else keeps its top under the menu bar and has its bottom trimmed to end at the bar. It runs when a window opens or resizes (AX notifications), when an app launches (0.5 and 1.5 s later) or comes to the front, when the bar size or screens change, and when Accessibility is granted. Moves alone never trigger it, so a window being dragged is not fought. Full-screen and minimized windows, other screens, and windows that would end up under 120 pt are left alone. After 3 changes to one window within 2 s it leaves that window alone for 30 s. "Keep windows above Superbar" in Settings, default on.
-- **Full screen.** While the main display shows a full-screen Space, the bar hides. Resting the pointer on the bottom edge for 0.2 s slides it up over the app, like the Dock; it slides away 0.6 s after the pointer leaves it. It stays up while the Start menu, a preview, the calendar, or a menu is open, and ⌃⎋ shows it with the Start menu. Checked on every Space change and app switch, again 0.7 s later, and every 2 s. The Start menu, previews, and calendar also join full-screen Spaces (`fullScreenAuxiliary`).
+- **Every display.** Each connected display has its own bar along its bottom edge, added and removed as displays come and go. Every bar shows the same apps and window counts from one list. Hover and drag stay on the bar under the pointer. Start and the calendar open on the display under the pointer; previews and tray popovers open above the button that was used. Windows are kept above the bar of the screen holding their middle.
+- **Full screen.** While a display shows a full-screen Space, its bar hides; the other bars stay. Resting the pointer on the bottom edge for 0.2 s slides it up over the app, like the Dock; it slides away 0.6 s after the pointer leaves it. It stays up while the Start menu, a preview, the calendar, or a menu is open, and ⌃⎋ shows it with the Start menu. Checked on every Space change and app switch, again 0.7 s later, and every 2 s. The Start menu, previews, and calendar also join full-screen Spaces (`fullScreenAuxiliary`).
 - **Prewarm.** 2 s after launch, build the Start menu panel and the preview popover and index apps, so the first open is instant.
 
 ## Gotchas
@@ -93,4 +94,4 @@ Main types:
 - Without Screen Recording, `kCGWindowName` is empty. Use the AX title, then the app name. Never show a blank title.
 - The Windows logo, the name "Windows", and Windows sounds are Microsoft's. Draw an original orb and keep them out of the app and its icon.
 
-Done when the bar shows pinned and running apps at the bottom of the main screen, clicking switches and minimizes the way Windows 7 does, hovering shows a preview of each window, and the Start menu opens apps and can restart the Mac.
+Done when the bar shows pinned and running apps at the bottom of every screen, clicking switches and minimizes the way Windows 7 does, hovering shows a preview of each window, and the Start menu opens apps and can restart the Mac.

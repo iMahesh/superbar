@@ -19,7 +19,7 @@ final class CalendarController {
     func open() {
         let panel = self.panel ?? GlassPanel(content: CalendarView(), size: Self.size, cornerRadius: 8, level: .popUpMenu)
         self.panel = panel
-        guard let screen = NSScreen.screens.first else { return }
+        guard let screen = NSScreen.withPointer else { return }
         let origin = NSPoint(x: screen.frame.maxX - Self.size.width - Space.xs,
                              y: screen.frame.minY + settings.metrics.height + Space.xs)
         panel.setFrame(NSRect(origin: origin, size: Self.size), display: true)

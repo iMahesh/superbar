@@ -6,6 +6,8 @@ struct TaskbarView: View {
     let model: TaskbarModel
     let tray: TrayModel
     let settings: AppSettings
+    /// The display this bar is on. Every bar shows the same apps; hover and drag stay on one bar.
+    var barID: CGDirectDisplayID = 0
     /// Snapshots draw without the AppKit mouse views, which ImageRenderer cannot draw.
     var interactive = true
 
@@ -20,7 +22,7 @@ struct TaskbarView: View {
                 StartOrb(size: m.orb) { model.onToggleStart() }
                     .padding(.horizontal, Space.xs)
                 MissionControlButton(metrics: m) { model.openMissionControl() }
-                AppStrip(model: model, metrics: m, interactive: interactive)
+                AppStrip(model: model, metrics: m, barID: barID, interactive: interactive)
                 Spacer(minLength: Space.sm)
                 TrayView(model: model, tray: tray, metrics: m, interactive: interactive)
                 ClockView(tray: tray, metrics: m) { model.onToggleCalendar() }
@@ -38,13 +40,15 @@ struct TaskbarView: View {
 private struct AppStrip: View {
     let model: TaskbarModel
     let metrics: BarMetrics
+    let barID: CGDirectDisplayID
     let interactive: Bool
 
     var body: some View {
+        let mine = model.pointerBar == nil || model.pointerBar == barID
         HStack(spacing: 0) {
             ForEach(model.apps) { app in
-                let dragging = model.drag?.id == app.id
-                AppButton(app: app, metrics: metrics, isHovered: model.hoveredID == app.id || dragging)
+                let dragging = mine && model.drag?.id == app.id
+                AppButton(app: app, metrics: metrics, isHovered: (mine && model.hoveredID == app.id) || dragging)
                     .overlay {
                         if interactive { MouseCatcher(handlers: handlers(for: app)) }
                     }
@@ -67,11 +71,15 @@ private struct AppStrip: View {
                 return model.menu(for: id)
             },
             hover: { inside, rect in
-                if inside { model.hoveredID = id } else if model.hoveredID == id { model.hoveredID = nil }
+                if inside {
+                    model.hoveredID = id
+                    model.pointerBar = barID
+                } else if model.hoveredID == id { model.hoveredID = nil }
                 model.onButtonHover(id, inside, rect)
             },
             drag: { offset in
                 model.onCloseTransient()
+                model.pointerBar = barID
                 model.drag = DragState(id: id, offset: offset)
             },
             dragEnd: { offset in model.endDrag(id, offset: offset, stride: stride) }

@@ -36,7 +36,7 @@ final class TrayPopoverController {
         let panel = self.panel ?? GlassPanel(content: TrayPopoverView(controller: self, tray: tray),
                                              size: size, cornerRadius: 8, level: .popUpMenu)
         self.panel = panel
-        guard let screen = NSScreen.screens.first?.frame else { return }
+        guard let screen = NSScreen.of(anchor)?.frame else { return }
         let x = min(max(anchor.midX - size.width / 2, screen.minX + Space.xs), screen.maxX - size.width - Space.xs)
         let y = screen.minY + settings.metrics.height + Space.xs
         panel.setFrame(NSRect(x: x.rounded(), y: y, width: size.width, height: size.height), display: true)

@@ -1,6 +1,29 @@
 import AppKit
 import SwiftUI
 
+extension NSScreen {
+    var displayID: CGDirectDisplayID {
+        (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? CGMainDisplayID()
+    }
+
+    /// The screen frame in CG/AX coordinates: origin at the top left of the main screen.
+    var cgFrame: CGRect {
+        let mainHeight = NSScreen.screens.first?.frame.height ?? frame.height
+        return CGRect(x: frame.minX, y: mainHeight - frame.maxY, width: frame.width, height: frame.height)
+    }
+
+    /// The screen under a point, else the main screen.
+    static func at(_ point: NSPoint) -> NSScreen? {
+        screens.first { NSMouseInRect(point, $0.frame, false) } ?? screens.first
+    }
+
+    /// The screen whose bar a popover belongs to: the one holding the anchor's middle.
+    static func of(_ anchor: NSRect) -> NSScreen? { at(NSPoint(x: anchor.midX, y: anchor.midY)) }
+
+    /// The screen under the pointer: where Start and the calendar open.
+    static var withPointer: NSScreen? { at(NSEvent.mouseLocation) }
+}
+
 /// The Aero-style glass all of Superbar's panels share: a dark HUD blur.
 enum Glass {
     /// #1C2B3A at 30% over the blur.

@@ -172,7 +172,7 @@ final class StartMenuController {
         model.index.start()
         model.query = ""
         let panel = makePanel()
-        guard let screen = NSScreen.screens.first else { return }
+        guard let screen = NSScreen.withPointer else { return }
         let origin = NSPoint(x: screen.frame.minX, y: screen.frame.minY + settings.metrics.height)
         panel.setFrame(NSRect(origin: origin, size: Self.size), display: true)
         panel.orderFrontRegardless()

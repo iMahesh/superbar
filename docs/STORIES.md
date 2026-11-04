@@ -5,7 +5,7 @@ Status key: `built` means the code is in and every [unit] and [snap] line passes
 ## M1 Core loop
 
 ### S-001 Show the taskbar
-As the user, I launch Superbar and a glass bar sits along the bottom of the main screen
+As the user, I launch Superbar and a glass bar sits along the bottom of each screen
 with the Start orb, my running apps, and the clock.
 Screens: taskbar.png
 Acceptance:
@@ -154,6 +154,18 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-021 A bar on every display
+As the user with a second display connected, each display has its own Superbar along its bottom, with the same apps.
+Depends: S-001, S-017, S-019, S-020
+Acceptance:
+- [self-test] One bar per connected display, each spanning the bottom of its display.
+- [unit] WorkArea keeps a window on a second screen above that screen's bar, and the main screen's area leaves it alone.
+- [manual] Verified 2026-11-04 with the built-in display and an LG UltraFine: two bars (1440 and 1920 pt wide) listing the same apps in the same order.
+- [manual] Hover on one bar lights only that bar; Start and the calendar open on the display under the pointer; a tray popover opens above its icon.
+- [manual] A full-screen app on one display hides only that display's bar.
+- [manual] Unplugging a display removes its bar; plugging it in adds one.
+Status: built
+
 ### S-020 Which apps get a button
 As the user, the bar shows my pinned apps always and other apps only while they have a window, so apps with nothing open don't clutter it.
 Depends: S-001, S-003
@@ -167,7 +179,7 @@ Acceptance:
   - pinned: "1 window", then "0 windows" after its last window closed, then "Not running" after it quit, and after Superbar restarted.
   - Accessibility off: unpinned running apps keep their buttons ("Running").
 - [snap] Only an app with a window (or a running app whose windows are unknown) gets the raised button frame; a running app with no window, like Finder with only the desktop, looks like a plain pin.
-- Not verified: more than one display (this Mac has one; Superbar draws one bar, on the main display, from one list).
+- Multiple displays: see S-021.
 Status: built
 
 ### S-019 Keep windows above Superbar
@@ -192,6 +204,6 @@ Status: built
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek
-- Taskbar on other edges and on every screen
+- Taskbar on other edges
 - Uncombined buttons with labels
 - Badges and progress from the Dock

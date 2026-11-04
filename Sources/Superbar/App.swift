@@ -40,29 +40,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AnyView(SettingsView(state: settingsState, settings: settings, dock: dock, permissions: permissions).themed())
     }
     let settingsState = SettingsState()
-    private(set) var bar: GlassPanel!
-    private(set) var barPresenter: BarPresenter?
+    /// One bar per display, all showing the same apps.
+    private(set) var bars: [BarPresenter] = []
+    private var barsStarted = false
+    /// The main display's bar (snapshots and the self-test use it).
+    var barPresenter: BarPresenter? { bars.first { $0.displayID == CGMainDisplayID() } ?? bars.first }
+    var bar: GlassPanel! { barPresenter?.panel }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 1.0)
         installMainMenu()
         wire()
-        bar = GlassPanel(content: TaskbarView(model: model, tray: tray, settings: settings),
-                         size: NSSize(width: 800, height: settings.metrics.height), cornerRadius: 0, level: .statusBar)
-        let presenter = BarPresenter(panel: bar, settings: settings)
-        presenter.heldOpen = { [unowned self] in
-            startMenu.isOpen || preview.isVisible || calendar.isOpen || trayPopovers.isOpen || model.drag != nil
-        }
-        barPresenter = presenter
-        layoutBar()
+        syncBars()
         tray.start()
 
         if Snapshot.runIfRequested(self) { return }
         if SelfTest.runIfRequested(self) { return }
 
         model.startWatching()
-        presenter.start()
-        startWindowFitter(presenter)
+        barsStarted = true
+        for presenter in bars { presenter.start() }
+        startWindowFitter()
         HotkeyCenter.shared.onStart = { [weak self] in self?.toggleStart() }
         HotkeyCenter.shared.register(settings.startHotkey)
         permissions.onAccessibilityGranted = { [weak self] in
@@ -119,10 +117,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Keeps windows out from under the bar: on launch, when apps launch or come to the
     /// front, and when the bar or the screen changes. Window opens and resizes come from
     /// the AX observers (AXObserverHost).
-    private func startWindowFitter(_ presenter: BarPresenter) {
+    private func startWindowFitter() {
         let fitter = WindowFitter.shared
-        fitter.isActive = { [unowned self] in settings.keepWindowsAbove && !presenter.isFullScreen }
-        fitter.barHeight = { [unowned self] in settings.metrics.height }
+        fitter.isActive = { [unowned self] in settings.keepWindowsAbove }
+        fitter.areas = { [unowned self] in
+            bars.filter { !$0.isFullScreen }.compactMap { $0.screen }
+                .map { FitArea.of($0, barHeight: settings.metrics.height) }
+        }
         let center = NSWorkspace.shared.notificationCenter
         center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
             let pid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
@@ -151,10 +152,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startMenu.toggle()
     }
 
-    /// Full width along the bottom of the main screen (the one with the menu bar),
-    /// or tucked below it while a full-screen app is showing (BarPresenter).
+    /// Full width along the bottom of every screen, or tucked below it while that
+    /// screen shows a full-screen app (BarPresenter).
     func layoutBar() {
-        barPresenter?.layout()
+        syncBars()
+    }
+
+    /// A bar for each connected display: new displays get one, removed ones lose theirs.
+    private func syncBars() {
+        let screens = NSScreen.screens
+        let ids = Set(screens.map(\.displayID))
+        for presenter in bars where !ids.contains(presenter.displayID) { presenter.stop() }
+        bars.removeAll { !ids.contains($0.displayID) }
+        for screen in screens where !bars.contains(where: { $0.displayID == screen.displayID }) {
+            let panel = GlassPanel(content: TaskbarView(model: model, tray: tray, settings: settings, barID: screen.displayID),
+                                   size: NSSize(width: screen.frame.width, height: settings.metrics.height),
+                                   cornerRadius: 0, level: .statusBar)
+            let presenter = BarPresenter(panel: panel, settings: settings, displayID: screen.displayID)
+            presenter.heldOpen = { [unowned self] in
+                startMenu.isOpen || preview.isVisible || calendar.isOpen || trayPopovers.isOpen || model.drag != nil
+            }
+            presenter.onFullScreenChange = { WindowFitter.shared.scanAll() }
+            bars.append(presenter)
+            if barsStarted { presenter.start() }
+        }
+        for presenter in bars { presenter.layout() }
     }
 
     private func observeBarSize() {

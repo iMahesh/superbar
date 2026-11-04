@@ -23,7 +23,7 @@ The Dock, for people who think in taskbars. Also uBar.
 - Preview cache: window ID to image. Memory only.
 
 ## Shape
-A borderless, non-activating panel docked to the bottom of the main screen, full width,
+A borderless, non-activating panel docked to the bottom of every connected screen, full width,
 above normal windows. A Start menu panel and preview popovers that open from it. A
 Settings window. macOS 26 or later. No Dock icon (LSUIElement). Local data. Works
 offline. No accounts.
@@ -45,7 +45,6 @@ original glyph. Clock shows time over date in two lines. A 10 pt "show desktop" 
 the far right edge.
 
 ## Not in version one
-- A taskbar on every screen (main screen only)
 - Jump Lists with an app's recent documents
 - Aero Peek (fade all windows to glass on hover)
 - Aero Snap and Aero Shake (see window-snapper.md)

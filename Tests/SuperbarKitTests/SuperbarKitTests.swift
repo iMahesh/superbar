@@ -242,3 +242,12 @@ private func resolve(_ list: AXQuery<[Int]>, focused: AXQuery<Int> = .none, main
     // A fallback that does find a window wins over another that failed.
     #expect(resolve(.value([]), focused: .failed, main: .value(8)) == [8])
 }
+
+// S-021
+@Test func windowsOnASecondScreenFitAboveThatScreensBar() {
+    // A 1920 by 1080 screen to the right of a 1440 wide main screen, its bar top at 1040.
+    let low = CGRect(x: 1600, y: 700, width: 800, height: 380)
+    #expect(WorkArea.fit(low, top: 25, bottom: 1040, minX: 1440, maxX: 3360) == CGRect(x: 1600, y: 660, width: 800, height: 380))
+    // The main screen's area ignores it.
+    #expect(WorkArea.fit(low, top: 24, bottom: 860, minX: 0, maxX: 1440) == nil)
+}

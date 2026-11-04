@@ -14,8 +14,13 @@ public enum WorkArea {
     ///   - bottom: the top of Superbar.
     ///   - screenWidth: the main screen's width.
     public static func fit(_ window: CGRect, top: CGFloat, bottom: CGFloat, screenWidth: CGFloat) -> CGRect? {
-        // Only windows on the main screen: their middle lies within it.
-        guard window.midX >= 0, window.midX <= screenWidth, window.minY < bottom, window.maxY > bottom + 0.5 else { return nil }
+        fit(window, top: top, bottom: bottom, minX: 0, maxX: screenWidth)
+    }
+
+    /// The same for any screen: `minX`...`maxX` is its horizontal range in AX coordinates.
+    public static func fit(_ window: CGRect, top: CGFloat, bottom: CGFloat, minX: CGFloat, maxX: CGFloat) -> CGRect? {
+        // Only windows on this screen: their middle lies within it.
+        guard window.midX >= minX, window.midX <= maxX, window.minY < bottom, window.maxY > bottom + 0.5 else { return nil }
         let overlap = window.maxY - bottom
         // Room above: move it up, size unchanged.
         if window.minY - overlap >= top {

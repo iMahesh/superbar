@@ -98,7 +98,7 @@ final class PreviewController {
 
     private func layout(_ panel: GlassPanel, count: Int) {
         let size = Self.size(for: count)
-        guard let screen = NSScreen.screens.first else { return }
+        guard let screen = NSScreen.of(anchor) else { return }
         var x = anchor.midX - size.width / 2
         x = min(max(x, screen.frame.minX + Space.xs), screen.frame.maxX - size.width - Space.xs)
         let y = anchor.maxY + Space.xs

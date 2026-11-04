@@ -31,6 +31,14 @@ enum SelfTest {
             check("the bar is full width at the bottom of the main screen",
                   app.bar.frame.minY == NSScreen.screens.first?.frame.minY && app.bar.frame.width == NSScreen.screens.first?.frame.width)
             check("the bar is 40 pt tall", app.bar.frame.height == 40)
+            // S-021: one bar per display, along its bottom edge, all from the same app list.
+            check("every display has its own bar", app.bars.count == NSScreen.screens.count
+                  && NSScreen.screens.allSatisfy { s in app.bars.contains { $0.displayID == s.displayID } },
+                  "\(app.bars.count) bars for \(NSScreen.screens.count) displays")
+            check("each bar spans the bottom of its display", app.bars.allSatisfy { b in
+                guard let f = b.screen?.frame else { return false }
+                return b.panel.frame.minX == f.minX && b.panel.frame.minY == f.minY && b.panel.frame.width == f.width
+            })
             check("the bar cannot take focus", !app.bar.canBecomeKey)
             check("the bar sits above normal windows", app.bar.level == .statusBar, "level \(app.bar.level.rawValue)")
             check("the private focus and show-desktop calls exist", Private.missing.isEmpty, Private.missing.joined(separator: ", "))
@@ -113,8 +121,9 @@ enum SelfTest {
                 let panels: [NSWindow] = [app.bar] + NSApp.windows.filter { $0 is GlassPanel && $0 !== app.bar }
                 check("the bar and its popovers can appear over full-screen apps",
                       panels.allSatisfy { $0.collectionBehavior.contains(.fullScreenAuxiliary) })
-                let detected = await FullScreenDetector.mainScreenIsFullScreen(
-                    screenSize: screen.size, frontPID: NSWorkspace.shared.frontmostApplication?.processIdentifier)
+                let detected = await FullScreenDetector.isFullScreen(
+                    display: CGMainDisplayID(), screen: CGRect(origin: .zero, size: screen.size),
+                    frontPID: NSWorkspace.shared.frontmostApplication?.processIdentifier)
                 print("INFO full screen detected right now: \(detected)")
 
                 presenter.detectionEnabled = false

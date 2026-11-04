@@ -43,6 +43,8 @@ final class TaskbarModel {
     private(set) var frontPID: pid_t?
     var hoveredID: String?
     var drag: DragState?
+    /// The display whose bar the hover or drag is on; nil means every bar (snapshots).
+    var pointerBar: CGDirectDisplayID?
     var showDesktopOn = false
     private(set) var recent: RecentList
 
