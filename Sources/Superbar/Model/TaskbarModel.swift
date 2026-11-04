@@ -396,13 +396,19 @@ final class TaskbarModel {
 
     // MARK: Trash
 
-    /// Opens the Trash in a Finder window. Through Launch Services, so Superbar itself
-    /// never reads the Trash folder (that needs Full Disk Access).
+    /// Opens Finder's Trash, as the Dock does: the Trash in Finder's sidebar, which shows
+    /// what you deleted from every drive and has Empty and Put Back. ~/.Trash is only the
+    /// folder behind it for the startup drive. Needs Automation of Finder (asked once);
+    /// without it, falls back to that folder.
     func openTrash() {
         onCloseTransient()
-        let trash = FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).first
+        var error: NSDictionary?
+        NSAppleScript(source: "tell application \"Finder\"\n  activate\n  open trash\nend tell")?.executeAndReturnError(&error)
+        guard error != nil else { return }
+        // Launch Services opens the folder, so Superbar never reads it (no Full Disk Access).
+        let folder = FileManager.default.urls(for: .trashDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory()).appending(path: ".Trash")
-        NSWorkspace.shared.open(trash)
+        NSWorkspace.shared.open(folder)
     }
 
     // MARK: Mission Control

@@ -160,7 +160,7 @@ Depends: S-007
 Acceptance:
 - [self-test] The tray has four clickable icons (Trash, Wi-Fi, sound, battery), and the Trash folder resolves.
 - [snap] The Trash icon sits just left of Wi-Fi, in the tray's style.
-- [manual] Verified 2026-11-04: a click brought Finder to the front with a window titled "Trash".
+- [manual] A click opens Finder's own Trash (the one in its sidebar, with Empty and Put Back), after allowing Superbar to control Finder once. Declining opens the ~/.Trash folder instead. Earlier build verified 2026-11-04: it opened the ~/.Trash folder, not Finder's Trash.
 Status: built
 
 ### S-022 Settings acts like an app window
