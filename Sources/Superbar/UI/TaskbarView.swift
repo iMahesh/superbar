@@ -125,6 +125,8 @@ struct AppButton: View {
         .contentShape(Rectangle())
         .accessibilityElement()
         .accessibilityLabel(app.name)
+        .accessibilityValue(!app.isRunning ? "Not running" : !app.windowsKnown ? "Running"
+                            : app.windows.count == 1 ? "1 window" : "\(app.windows.count) windows")
         .accessibilityAddTraits(.isButton)
     }
 }

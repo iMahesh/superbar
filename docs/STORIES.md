@@ -154,6 +154,21 @@ Acceptance:
 - [snap] Small size with 24 pt icons.
 Status: built
 
+### S-020 Which apps get a button
+As the user, the bar shows my pinned apps always and other apps only while they have a window, so apps with nothing open don't clutter it.
+Depends: S-001, S-003
+Acceptance:
+- [unit] AppVisibility: pinned apps always show; unpinned running apps show only with a live window, and stay while their windows are unknown. WindowListResolver dedupes, skips auxiliary windows, falls back to the focused then the main window when the list is empty, and treats a failed read as unknown.
+- [manual] Verified 2026-11-04 through the bar's own accessibility tree, with a test app:
+  - unpinned with a window: shown, "1 window"; its last window closed: gone at once.
+  - unpinned, only window minimized: shown, "1 window".
+  - unpinned, only window in native full screen, after switching back to the desktop Space: shown, "1 window" (kAXWindowsAttribute was empty; the focused-window fallback found it). Auto-hide still hid the bar on the full-screen Space and brought it back on the desktop.
+  - a window plus a floating panel: "1 window".
+  - pinned: "1 window", then "0 windows" after its last window closed, then "Not running" after it quit, and after Superbar restarted.
+  - Accessibility off: unpinned running apps keep their buttons ("Running").
+- Not verified: more than one display (this Mac has one; Superbar draws one bar, on the main display, from one list).
+Status: built
+
 ### S-019 Keep windows above Superbar
 As the user, my windows end at the top of Superbar, so nothing at the bottom of an app (like Google Sheets' sheet tabs) hides behind it.
 Depends: S-001, S-008

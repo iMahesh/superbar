@@ -17,6 +17,8 @@ struct TaskbarApp: Identifiable {
     var isHidden: Bool
     /// Visible windows first, minimized after (WindowOrder.pickerOrder).
     var windows: [AppWindow]
+    /// False until Accessibility has read this app's windows once.
+    var windowsKnown = true
     var glowColor: Color
 
     var isRunning: Bool { pid != nil }
@@ -29,7 +31,8 @@ struct DragState: Equatable {
 }
 
 /// Merges pinned and running apps into one ordered list and handles every
-/// click, menu, and drag on the bar.
+/// click, menu, and drag on the bar. Pinned apps always have a button; unpinned
+/// ones only while they have a live window (AppVisibility).
 @Observable
 final class TaskbarModel {
     private(set) var pins: PinList
@@ -81,14 +84,17 @@ final class TaskbarModel {
             let isPinned = pins.contains(id)
             let url = app?.bundleURL ?? (isPinned ? cache.url(forBundleID: id) : nil)
             guard app != nil || url != nil else { return nil }   // a pin whose app is gone
-            let icon = cache.icon(for: id, url: url, running: app)
             let pid = app?.processIdentifier
+            let state = pid.map(index.state) ?? .unknown
+            guard AppVisibility.isShown(isPinned: isPinned, isRunning: app != nil, windows: state) else { return nil }
+            let icon = cache.icon(for: id, url: url, running: app)
             let windows = pid.map { WindowOrder.pickerOrder(index.windows[$0] ?? []) { $0.isMinimized } } ?? []
             return TaskbarApp(id: id, bundleID: app?.bundleIdentifier ?? id, pid: pid,
                               name: app?.localizedName ?? Self.displayName(url),
                               icon: icon, url: url, isPinned: isPinned,
                               isActive: pid != nil && pid == frontPID, isHidden: app?.isHidden ?? false,
-                              windows: windows, glowColor: cache.glow(for: id, icon: icon))
+                              windows: windows, windowsKnown: state != .unknown,
+                              glowColor: cache.glow(for: id, icon: icon))
         }
     }
 

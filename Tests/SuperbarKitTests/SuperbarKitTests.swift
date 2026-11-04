@@ -204,3 +204,41 @@ private final class FakeDock: DockPreferences {
     // Would become too short.
     #expect(WorkArea.fit(CGRect(x: 0, y: 800, width: 800, height: 900), top: 790, bottom: 860, screenWidth: 1440) == nil)
 }
+
+// S-020
+@Test func pinnedAppsAlwaysShowUnpinnedOnlyWithLiveWindows() {
+    #expect(AppVisibility.isShown(isPinned: true, isRunning: false, windows: .unknown))
+    #expect(AppVisibility.isShown(isPinned: true, isRunning: true, windows: .known(count: 0)))
+    #expect(!AppVisibility.isShown(isPinned: false, isRunning: true, windows: .known(count: 0)))
+    #expect(AppVisibility.isShown(isPinned: false, isRunning: true, windows: .known(count: 1)))
+    #expect(!AppVisibility.isShown(isPinned: false, isRunning: false, windows: .known(count: 2)))
+    // Accessibility off or no successful read yet: keep the button.
+    #expect(AppVisibility.isShown(isPinned: false, isRunning: true, windows: .unknown))
+}
+
+/// Windows as ints; negative ones are auxiliary panels.
+private func resolve(_ list: AXQuery<[Int]>, focused: AXQuery<Int> = .none, main: AXQuery<Int> = .none) -> [Int]? {
+    WindowListResolver.resolve(windows: list, focused: { focused }, main: { main }, isLive: { $0 > 0 }, same: ==)
+}
+
+@Test func windowListIsDedupedAndSkipsAuxiliaryWindows() {
+    #expect(resolve(.value([1, 2, 1, -5])) == [1, 2])
+    #expect(resolve(.value([-5]), focused: .value(-5), main: .value(-5)) == [])
+    #expect(resolve(.none) == [])
+}
+
+@Test func emptyWindowListFallsBackToFocusedThenMain() {
+    // A window in native full screen on another Space.
+    #expect(resolve(.value([]), focused: .value(7)) == [7])
+    #expect(resolve(.value([]), focused: .none, main: .value(8)) == [8])
+    #expect(resolve(.value([]), focused: .value(-1), main: .value(8)) == [8])
+    // The fallback is only for an empty list.
+    #expect(resolve(.value([3]), focused: .value(7)) == [3])
+}
+
+@Test func failedReadsAreUnknownNotEmpty() {
+    #expect(resolve(.failed, focused: .value(7)) == nil)
+    #expect(resolve(.value([]), focused: .failed, main: .none) == nil)
+    // A fallback that does find a window wins over another that failed.
+    #expect(resolve(.value([]), focused: .failed, main: .value(8)) == [8])
+}

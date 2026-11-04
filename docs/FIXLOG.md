@@ -22,3 +22,8 @@
 - Cause: the fallback looked for a window covering the whole screen, but this Mac's full-screen windows start 30 pt down, the same bounds as a zoomed window. The ad hoc build had no Accessibility, so the AXFullScreen check could not run.
 - Fix: ask SkyLight for the main display's Space type (4 = full screen) first; AX and bounds are fallbacks.
 - Rule: detect full screen from the Space, never from window bounds alone.
+
+## Superbar crashed when its own Settings window came to the front (2026-11-04)
+- Symptom: with Accessibility granted and Settings open, Superbar quit with SIGTRAP in `NSWMWindowCoordinator` under `FitWorker.fitNow`.
+- Cause: activating Superbar (opening Settings) sent `didActivateApplication` for its own pid, so WindowFitter scanned and resized Superbar's own window through AX on a background thread. AppKit traps on that.
+- Fix: WindowFitter skips Superbar's own pid in `scan(pid:)` and `windowChanged`.

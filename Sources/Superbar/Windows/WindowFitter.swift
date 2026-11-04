@@ -39,7 +39,9 @@ final class WindowFitter {
 
     /// One window, after AX said it opened or resized.
     func windowChanged(_ ref: AXRef) {
-        guard isActive(), AXIsProcessTrusted(), let area else { return }
+        var pid: pid_t = 0
+        AXUIElementGetPid(ref.element, &pid)
+        guard pid != getpid(), isActive(), AXIsProcessTrusted(), let area else { return }
         let key = CFHash(ref.element)
         let now = Date()
         if let until = restingUntil[key], until > now { return }
@@ -56,7 +58,9 @@ final class WindowFitter {
 
     /// Every window of one app.
     func scan(pid: pid_t) {
-        guard isActive(), AXIsProcessTrusted(), let area else { return }
+        // Never Superbar itself: AppKit traps when its own windows are set through AX
+        // off the main thread (Settings is activated, and so scanned, like any app).
+        guard pid != getpid(), isActive(), AXIsProcessTrusted(), let area else { return }
         Task { await FitWorker.scan(pid: pid, in: area) }
     }
 

@@ -18,17 +18,27 @@ nonisolated struct AppWindow: Identifiable, @unchecked Sendable {
 /// Reads windows through AX, off the main thread. AX is the only list that
 /// includes minimized windows; CG only adds IDs and names.
 nonisolated enum AXReader {
+    /// nil when the read failed: the caller keeps what it knew.
     @concurrent
-    static func windows(pid: pid_t) async -> [AppWindow] { read(pid: pid) }
+    static func windows(pid: pid_t) async -> [AppWindow]? { read(pid: pid) }
 
-    static func read(pid: pid_t) -> [AppWindow] {
+    /// The app's live windows: ordinary, minimized, and native full screen (through
+    /// the focused/main fallback in WindowListResolver). nil when unknown.
+    static func read(pid: pid_t) -> [AppWindow]? {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 1.0)
-        guard let list: [AXUIElement] = value(app, kAXWindowsAttribute) else { return [] }
+        let elements = WindowListResolver.resolve(
+            windows: query(app, kAXWindowsAttribute) as AXQuery<[AXUIElement]>,
+            focused: { query(app, kAXFocusedWindowAttribute) },
+            main: { query(app, kAXMainWindowAttribute) },
+            isLive: isLive,
+            same: { a, b in
+                let ia = Private.windowID(of: a) ?? 0, ib = Private.windowID(of: b) ?? 0
+                return ia != 0 && ib != 0 ? ia == ib : CFEqual(a, b)
+            })
+        guard let elements else { return nil }
         var cgNames: [CGWindowID: String]?
-        return list.compactMap { element in
-            let subrole: String? = value(element, kAXSubroleAttribute)
-            guard subrole == kAXStandardWindowSubrole || subrole == kAXDialogSubrole else { return nil }
+        return elements.map { element in
             let id = Private.windowID(of: element) ?? 0
             var title: String = value(element, kAXTitleAttribute) ?? ""
             if title.isEmpty, id != 0 {
@@ -37,6 +47,29 @@ nonisolated enum AXReader {
             }
             let minimized: Bool = value(element, kAXMinimizedAttribute) ?? false
             return AppWindow(windowID: id, element: element, title: title, isMinimized: minimized)
+        }
+    }
+
+    /// A window a person works in. Standard windows and dialogs (macOS reports an
+    /// inactive or minimized window as a dialog); not panels, the Finder desktop, or
+    /// tiny placeholder windows. Untitled windows count.
+    private static func isLive(_ element: AXUIElement) -> Bool {
+        let subrole: String? = value(element, kAXSubroleAttribute)
+        guard subrole == kAXStandardWindowSubrole || subrole == kAXDialogSubrole else { return false }
+        if let raw: AXValue = value(element, kAXSizeAttribute) {
+            var size = CGSize.zero
+            if AXValueGetValue(raw, .cgSize, &size), size.width < 20 || size.height < 20 { return false }  // grid: ok placeholder size, not layout
+        }
+        return true
+    }
+
+    /// No value and an unsupported attribute are answers; anything else is a failed read.
+    static func query<T>(_ element: AXUIElement, _ attribute: String) -> AXQuery<T> {
+        var raw: CFTypeRef?
+        switch AXUIElementCopyAttributeValue(element, attribute as CFString, &raw) {
+        case .success: return (raw as? T).map { .value($0) } ?? .none
+        case .noValue, .attributeUnsupported: return .none
+        default: return .failed
         }
     }
 
@@ -111,6 +144,17 @@ nonisolated final class AXObserverHost: @unchecked Sendable {
         }
     }
 
+    /// "Destroyed" is sent only to observers of the window itself, not of its app,
+    /// so each window is registered as it is read. Registering twice is harmless.
+    func watchWindows(_ windows: [AppWindow], pid: pid_t) {
+        perform { [self] in
+            guard let observer = observers[pid] else { return }
+            for window in windows {
+                AXObserverAddNotification(observer, window.element, kAXUIElementDestroyedNotification as CFString, nil)
+            }
+        }
+    }
+
     func unwatch(_ pid: pid_t) {
         perform { [self] in
             guard let observer = observers.removeValue(forKey: pid) else { return }
@@ -150,6 +194,7 @@ nonisolated final class AXObserverHost: @unchecked Sendable {
 final class WindowIndex {
     static let shared = WindowIndex()
 
+    /// The last successful read per pid. A failed read leaves it as it was.
     private(set) var windows: [pid_t: [AppWindow]] = [:]
     @ObservationIgnored private var watched: Set<pid_t> = []
     @ObservationIgnored private var pending: Set<pid_t> = []
@@ -157,11 +202,10 @@ final class WindowIndex {
 
     /// Starts watching new pids and drops quit ones.
     func sync(pids: Set<pid_t>) {
-        guard AXIsProcessTrusted() else { return }
-        for pid in watched.subtracting(pids) {
-            AXObserverHost.shared.unwatch(pid)
-            windows[pid] = nil
-        }
+        // Termination is the one thing that clears a pid's windows, with or without Accessibility.
+        for pid in watched.subtracting(pids) { AXObserverHost.shared.unwatch(pid) }
+        for pid in Set(windows.keys).subtracting(pids) { windows[pid] = nil }
+        guard AXIsProcessTrusted() else { watched.formIntersection(pids); return }
         for pid in pids.subtracting(watched) {
             AXObserverHost.shared.watch(pid)
             refresh(pid)
@@ -183,9 +227,17 @@ final class WindowIndex {
         Task {
             try? await Task.sleep(for: .milliseconds(50))
             pending.remove(pid)
-            let list = await AXReader.windows(pid: pid)
-            if watched.contains(pid) { windows[pid] = list }
+            // A failed read is unknown, not "no windows": keep the last good list
+            // until a read succeeds or the app quits (sync drops it).
+            guard let list = await AXReader.windows(pid: pid), watched.contains(pid) else { return }
+            windows[pid] = list
+            AXObserverHost.shared.watchWindows(list, pid: pid)
         }
+    }
+
+    /// `.unknown` until a read of this pid has succeeded.
+    func state(_ pid: pid_t) -> WindowState {
+        windows[pid].map { .known(count: $0.count) } ?? .unknown
     }
 
     func refreshAll() {
