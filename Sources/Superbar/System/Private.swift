@@ -8,10 +8,12 @@ nonisolated enum Private {
     private typealias SetFrontProcess = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, CGWindowID, UInt32) -> CGError
     private typealias PostEventRecordTo = @convention(c) (UnsafeMutablePointer<ProcessSerialNumber>, UnsafeMutablePointer<UInt8>) -> CGError
     private typealias AXGetWindow = @convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError
+    private typealias AXCreateWithRemoteToken = @convention(c) (CFData) -> Unmanaged<AXUIElement>?
     private typealias CoreDockSendNotification = @convention(c) (CFString, Int32) -> Void
     private typealias MainConnectionID = @convention(c) () -> Int32
     private typealias DisplayCurrentSpace = @convention(c) (Int32, CFString) -> UInt64
     private typealias SpaceGetType = @convention(c) (Int32, UInt64) -> Int32
+    private typealias CopySpacesForWindows = @convention(c) (Int32, Int32, CFArray) -> Unmanaged<CFArray>?
 
     private static func symbol<T>(_ name: String, in path: String? = nil, as type: T.Type) -> T? {
         // RTLD_DEFAULT searches every loaded image; SkyLight is opened by path first.
@@ -25,10 +27,12 @@ nonisolated enum Private {
     private static let setFrontProcess = symbol("_SLPSSetFrontProcessWithOptions", in: skyLight, as: SetFrontProcess.self)
     private static let postEventRecordTo = symbol("SLPSPostEventRecordTo", in: skyLight, as: PostEventRecordTo.self)
     private static let axGetWindow = symbol("_AXUIElementGetWindow", as: AXGetWindow.self)
+    private static let axCreateWithRemoteToken = symbol("_AXUIElementCreateWithRemoteToken", as: AXCreateWithRemoteToken.self)
     private static let coreDockSend = symbol("CoreDockSendNotification", as: CoreDockSendNotification.self)
     private static let mainConnectionID = symbol("SLSMainConnectionID", in: skyLight, as: MainConnectionID.self)
     private static let displayCurrentSpace = symbol("SLSManagedDisplayGetCurrentSpace", in: skyLight, as: DisplayCurrentSpace.self)
     private static let spaceGetType = symbol("SLSSpaceGetType", in: skyLight, as: SpaceGetType.self)
+    private static let copySpacesForWindows = symbol("SLSCopySpacesForWindows", in: skyLight, as: CopySpacesForWindows.self)
 
     /// Private calls this macOS lacks, for the self-test. Each falls back, but less well.
     static var missing: [String] {
@@ -36,9 +40,11 @@ nonisolated enum Private {
          ("_SLPSSetFrontProcessWithOptions", setFrontProcess != nil),
          ("SLPSPostEventRecordTo", postEventRecordTo != nil),
          ("_AXUIElementGetWindow", axGetWindow != nil),
+         ("_AXUIElementCreateWithRemoteToken", axCreateWithRemoteToken != nil),
          ("CoreDockSendNotification", coreDockSend != nil),
          ("SLSManagedDisplayGetCurrentSpace", displayCurrentSpace != nil && mainConnectionID != nil),
-         ("SLSSpaceGetType", spaceGetType != nil)].filter { !$0.1 }.map(\.0)
+         ("SLSSpaceGetType", spaceGetType != nil),
+         ("SLSCopySpacesForWindows", copySpacesForWindows != nil)].filter { !$0.1 }.map(\.0)
     }
 
     /// Whether a display's current Space is a full-screen one (Space type 4), as yabai
@@ -51,6 +57,34 @@ nonisolated enum Private {
         let space = displayCurrentSpace(connection, name)
         guard space != 0 else { return nil }
         return spaceGetType(connection, space) == 4
+    }
+
+    /// The AX element with this id in an app, made from a remote token, as AltTab does.
+    /// kAXWindowsAttribute lists only the current Space; this reaches windows on the
+    /// others (full-screen ones too) by trying element ids. Nil when the call is missing.
+    static func remoteElement(pid: pid_t, elementID: UInt64) -> AXUIElement? {
+        guard let axCreateWithRemoteToken else { return nil }
+        var token = Data(count: 20)
+        token.withUnsafeMutableBytes { p in
+            p.storeBytes(of: pid, toByteOffset: 0, as: Int32.self)
+            p.storeBytes(of: Int32(0), toByteOffset: 4, as: Int32.self)
+            p.storeBytes(of: Int32(0x636f_636f), toByteOffset: 8, as: Int32.self)   // 'coco'
+            p.storeBytes(of: elementID, toByteOffset: 12, as: UInt64.self)
+        }
+        return axCreateWithRemoteToken(token as CFData)?.takeRetainedValue()
+    }
+
+    static var canReachOtherSpaces: Bool {
+        axCreateWithRemoteToken != nil && copySpacesForWindows != nil && mainConnectionID != nil
+    }
+
+    /// Whether the window belongs to any Space. Windows an app keeps hidden off screen
+    /// belong to none; a window on another Space, full-screen or not, belongs to one.
+    static func isOnSomeSpace(_ window: CGWindowID) -> Bool {
+        guard let copySpacesForWindows, let mainConnectionID else { return false }
+        let ids = [NSNumber(value: window)] as CFArray
+        guard let spaces = copySpacesForWindows(mainConnectionID(), 0x7, ids)?.takeRetainedValue() else { return false }
+        return CFArrayGetCount(spaces) > 0
     }
 
     /// The CGWindowID behind an AX window, or nil.

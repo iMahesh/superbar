@@ -8,6 +8,7 @@ import SuperbarKit
 //   APP_STORE=<x> Superbar           use a separate, emptied UserDefaults suite (tests, snapshots)
 //   APP_SNAPSHOT=<dir> Superbar      save PNGs of the bar, Start menu, previews, calendar, and Settings, then quit
 //   Superbar --render-icon <dir>     write the app icon's PNGs (tools/make_flat_icon.sh)
+//   Superbar --windows <bundle id>   print the windows Superbar sees for one running app
 //   Superbar --selftest              run the self-test and quit with 0 or 1 (tools/selftest.sh)
 
 @main
@@ -17,6 +18,15 @@ enum SuperbarMain {
     static func main() {
         if let i = CommandLine.arguments.firstIndex(of: "--render-icon"), CommandLine.arguments.count > i + 1 {
             exit(AppIconArt.render(to: CommandLine.arguments[i + 1]) ? 0 : 1)
+        }
+        if let i = CommandLine.arguments.firstIndex(of: "--windows"), CommandLine.arguments.count > i + 1 {
+            // Debugging: what the window reader sees for one app, run from a trusted shell.
+            let bid = CommandLine.arguments[i + 1]
+            guard let pid = NSRunningApplication.runningApplications(withBundleIdentifier: bid).first?.processIdentifier
+            else { print("not running"); exit(1) }
+            let list = AXReader.read(pid: pid)
+            print(list.map { "\($0.count) windows: " + $0.map { "\($0.windowID) \($0.title)\($0.isMinimized ? " (min)" : "")" }.joined(separator: ", ") } ?? "unknown")
+            exit(0)
         }
         let app = NSApplication.shared
         app.delegate = delegate

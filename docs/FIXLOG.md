@@ -41,3 +41,6 @@
 ## The calendar snapshot showed a bar (2026-11-04)
 - Cause: snapshots found popovers as "a glass panel that can't take focus, other than the bar". With a bar per display, and the calendar now able to take focus, that matched the second display's bar.
 - Fix: snapshots take the calendar's own panel, and skip every bar and the Start menu when looking for a popover.
+
+## Two full-screen windows showed as one (2026-11-04)
+Two Safari windows in full screen: the button said 1 window and its preview and menu listed one. Each full-screen window is its own Space, and `kAXWindowsAttribute` lists only the current Space (none from the desktop, one on a full-screen Space); the focused-window fallback added just one. Fix: find the missing windows by element token (OtherSpaces). Two traps on the way: `_AXUIElementGetWindow` returns the window id for any element inside a window, so only elements with the AXWindow role count; and apps keep hidden windows off screen (Claude has an 800 × 600 one at x 2000), which belong to no Space and are skipped. Verified 2026-11-04: from the desktop the button said 2 windows, the menu listed both, and each menu item opened its own full-screen Space. Debug with `Superbar --windows <bundle id>` from a shell that has Accessibility.

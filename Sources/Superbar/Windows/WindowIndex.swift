@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Synchronization
 import Observation
 import SuperbarKit
 
@@ -36,7 +37,11 @@ nonisolated enum AXReader {
                 let ia = Private.windowID(of: a) ?? 0, ib = Private.windowID(of: b) ?? 0
                 return ia != 0 && ib != 0 ? ia == ib : CFEqual(a, b)
             })
-        guard let elements else { return nil }
+        guard var elements else { return nil }
+        // Windows on other Spaces (each full-screen window is its own Space) are missing
+        // from kAXWindowsAttribute; the window server still knows them.
+        let known = Set(elements.compactMap { Private.windowID(of: $0) })
+        elements += OtherSpaces.windows(pid: pid, known: known, isLive: isLive)
         var cgNames: [CGWindowID: String]?
         return elements.map { element in
             let id = Private.windowID(of: element) ?? 0
@@ -90,6 +95,67 @@ nonisolated enum AXReader {
         }
         return names
     }
+}
+
+/// Finds an app's windows on other Spaces. The window server lists every window; when
+/// it shows a big, normal-layer window that AX didn't report, element ids are tried
+/// (Private.remoteElement) until those windows turn up. Candidates that never turn up
+/// (an app's hidden helper windows) are remembered and not searched for again.
+nonisolated enum OtherSpaces {
+    /// Per pid, window ids searched for and not found.
+    private static let notWindows = Mutex<[pid_t: Set<CGWindowID>]>([:])
+    /// Element ids are small and grow as an app makes UI; AltTab tries the first 1000.
+    static let maxElementID: UInt64 = 5000
+    /// Never spend longer than this on one app.
+    static let budget: TimeInterval = 0.5
+
+    static func windows(pid: pid_t, known: Set<CGWindowID>, isLive: (AXUIElement) -> Bool) -> [AXUIElement] {
+        guard Private.canReachOtherSpaces else { return [] }
+        let skip = notWindows.withLock { $0[pid] ?? [] }
+        var missing = candidates(pid: pid).subtracting(known).subtracting(skip)
+        guard !missing.isEmpty else { return [] }
+        let searched = missing
+        var found: [AXUIElement] = []
+        let deadline = Date().addingTimeInterval(budget)
+        var finished = true
+        for elementID in 0..<maxElementID where !missing.isEmpty {
+            if elementID % 100 == 0, Date() > deadline { finished = false; break }
+            guard let element = Private.remoteElement(pid: pid, elementID: elementID) else { continue }
+            AXUIElementSetMessagingTimeout(element, 0.1)
+                // Every element inside a window reports that window's id: take only the window.
+            guard let id = Private.windowID(of: element), missing.contains(id),
+                  let role: String = AXReader.value(element, kAXRoleAttribute), role == kAXWindowRole else { continue }
+            missing.remove(id)
+            if isLive(element) { found.append(element) }
+        }
+        // Out of time: try again next read rather than write the rest off.
+        guard finished else { return found }
+        let foundIDs = Set(found.compactMap { Private.windowID(of: $0) })
+        notWindows.withLock { $0[pid, default: []].formUnion(searched.subtracting(foundIDs)) }
+        return found
+    }
+
+    /// Normal-layer windows of the app that aren't on screen, are big enough to be a
+    /// document window, and belong to a Space (not hidden helper windows). Minimized windows are among them, but AX reports those already.
+    private static func candidates(pid: pid_t) -> Set<CGWindowID> {
+        guard let info = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] else { return [] }
+        var ids = Set<CGWindowID>()
+        for w in info where (w[kCGWindowOwnerPID as String] as? pid_t) == pid {
+            guard (w[kCGWindowLayer as String] as? Int) == 0,
+                  (w[kCGWindowIsOnscreen as String] as? Bool) != true,
+                  (w[kCGWindowAlpha as String] as? Double ?? 1) > 0,
+                  let dict = w[kCGWindowBounds as String] as? NSDictionary,
+                  let bounds = CGRect(dictionaryRepresentation: dict),
+                  bounds.width >= 100, bounds.height >= 100,
+                  let id = w[kCGWindowNumber as String] as? CGWindowID,
+                  Private.isOnSomeSpace(id) else { continue }
+            ids.insert(id)
+        }
+        return ids
+    }
+
+    /// The app quit: its window ids won't come back.
+    static func forget(_ pid: pid_t) { _ = notWindows.withLock { $0.removeValue(forKey: pid) } }
 }
 
 /// One AXObserver per pid, on its own thread with its own run loop, so an app
@@ -204,7 +270,10 @@ final class WindowIndex {
     func sync(pids: Set<pid_t>) {
         // Termination is the one thing that clears a pid's windows, with or without Accessibility.
         for pid in watched.subtracting(pids) { AXObserverHost.shared.unwatch(pid) }
-        for pid in Set(windows.keys).subtracting(pids) { windows[pid] = nil }
+        for pid in Set(windows.keys).subtracting(pids) {
+            windows[pid] = nil
+            OtherSpaces.forget(pid)
+        }
         guard AXIsProcessTrusted() else { watched.formIntersection(pids); return }
         for pid in pids.subtracting(watched) {
             AXObserverHost.shared.watch(pid)
