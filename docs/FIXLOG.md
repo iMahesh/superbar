@@ -44,3 +44,7 @@
 
 ## Two full-screen windows showed as one (2026-11-04)
 Two Safari windows in full screen: the button said 1 window and its preview and menu listed one. Each full-screen window is its own Space, and `kAXWindowsAttribute` lists only the current Space (none from the desktop, one on a full-screen Space); the focused-window fallback added just one. Fix: find the missing windows by element token (OtherSpaces). Two traps on the way: `_AXUIElementGetWindow` returns the window id for any element inside a window, so only elements with the AXWindow role count; and apps keep hidden windows off screen (Claude has an 800 × 600 one at x 2000), which belong to no Space and are skipped. Verified 2026-11-04: from the desktop the button said 2 windows, the menu listed both, and each menu item opened its own full-screen Space. Debug with `Superbar --windows <bundle id>` from a shell that has Accessibility.
+
+## Show desktop did nothing in full screen (2026-11-05)
+The strip toggled the Dock's show desktop, which acts only on a desktop Space; a full-screen Space has no desktop. Fix: from a full-screen Space, slide to the nearest desktop Space with the user's own "Move left a space" keys (read with `CGSGetSymbolicHotKeyValue`, sent as CGEvents; needs Accessibility), wait for the slide, then show the desktop; the second click returns. Trap: a key sent while the Dock is still sliding windows back is dropped, so each step is checked against `SLSCopyManagedDisplaySpaces` and sent again (up to three times).
+

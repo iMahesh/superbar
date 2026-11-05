@@ -453,8 +453,17 @@ final class TaskbarModel {
 
     func toggleShowDesktop() {
         onCloseTransient()
+        // A full-screen Space has no desktop, so go to the nearest desktop Space first.
+        if !showDesktopOn, let display = NSScreen.of(NSRect(origin: NSEvent.mouseLocation, size: .zero))?.displayID,
+           Private.displayIsInFullScreenSpace(display) == true {
+            // Sending the Space shortcut needs Accessibility.
+            guard AXIsProcessTrusted() else { WindowSnapper.shared.onNeedsAccessibility(); return }
+            Task { await leaveFullScreenThenShowDesktop(display) }
+            return
+        }
         if Private.toggleShowDesktop() {
             showDesktopOn.toggle()
+            if !showDesktopOn { returnToFullScreen() }
             return
         }
         // Fallback: hide every other app, then unhide the same ones.
@@ -467,6 +476,55 @@ final class TaskbarModel {
             hiddenByShowDesktop = []
             showDesktopOn = false
         }
+    }
+
+    /// Where show desktop came from a full-screen Space: the Space it landed on and the way
+    /// back, so turning it off returns to the full-screen app.
+    @ObservationIgnored private var cameFromFullScreen: (display: CGDirectDisplayID, steps: Int)?
+
+    private func leaveFullScreenThenShowDesktop(_ display: CGDirectDisplayID) async {
+        guard let spaces = Private.spaces(on: display),
+              let steps = SpaceHop.steps(types: spaces.types, current: spaces.current),
+              await moveSpaces(steps, display: display) else { return }
+        cameFromFullScreen = (display, -steps)
+        if Private.toggleShowDesktop() { showDesktopOn = true }
+    }
+
+    private func returnToFullScreen() {
+        guard let back = cameFromFullScreen else { return }
+        cameFromFullScreen = nil
+        // Only while still on the desktop Space show desktop landed on.
+        guard Private.displayIsInFullScreenSpace(back.display) == false else { return }
+        Task {
+            // Let the windows slide back first; the Dock drops a Space switch meanwhile.
+            try? await Task.sleep(for: .milliseconds(400))
+            _ = await moveSpaces(back.steps, display: back.display)
+        }
+    }
+
+    /// Moves Spaces with the user's own "Move left/right a space" shortcut, one Space at a
+    /// time, then waits for the slide to finish. A press sent while the Dock is still
+    /// animating can be dropped, so each is sent again if nothing moved. False when the
+    /// shortcut is off or the Space didn't change.
+    private func moveSpaces(_ steps: Int, display: CGDirectDisplayID) async -> Bool {
+        guard steps != 0, let key = Private.moveSpaceKey(left: steps < 0),
+              var at = Private.spaces(on: display)?.current else { return false }
+        for _ in 0..<abs(steps) {
+            let goal = at + steps.signum()
+            var moved = false
+            for _ in 0..<3 where !moved {
+                WindowActions.postKey(key.keyCode, flags: key.flags, to: nil)
+                for _ in 0..<10 where !moved {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    moved = Private.spaces(on: display)?.current == goal
+                }
+            }
+            guard moved else { return false }
+            at = goal
+        }
+        // The Dock ignores show desktop until the slide is done.
+        try? await Task.sleep(for: .milliseconds(450))
+        return true
     }
 }
 

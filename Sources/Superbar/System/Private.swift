@@ -14,6 +14,9 @@ nonisolated enum Private {
     private typealias DisplayCurrentSpace = @convention(c) (Int32, CFString) -> UInt64
     private typealias SpaceGetType = @convention(c) (Int32, UInt64) -> Int32
     private typealias CopySpacesForWindows = @convention(c) (Int32, Int32, CFArray) -> Unmanaged<CFArray>?
+    private typealias CopyManagedDisplaySpaces = @convention(c) (Int32) -> Unmanaged<CFArray>?
+    private typealias GetSymbolicHotKeyValue = @convention(c) (Int32, UnsafeMutablePointer<UInt16>, UnsafeMutablePointer<UInt16>, UnsafeMutablePointer<UInt32>) -> CGError
+    private typealias IsSymbolicHotKeyEnabled = @convention(c) (Int32) -> Bool
 
     private static func symbol<T>(_ name: String, in path: String? = nil, as type: T.Type) -> T? {
         // RTLD_DEFAULT searches every loaded image; SkyLight is opened by path first.
@@ -33,6 +36,9 @@ nonisolated enum Private {
     private static let displayCurrentSpace = symbol("SLSManagedDisplayGetCurrentSpace", in: skyLight, as: DisplayCurrentSpace.self)
     private static let spaceGetType = symbol("SLSSpaceGetType", in: skyLight, as: SpaceGetType.self)
     private static let copySpacesForWindows = symbol("SLSCopySpacesForWindows", in: skyLight, as: CopySpacesForWindows.self)
+    private static let copyManagedDisplaySpaces = symbol("SLSCopyManagedDisplaySpaces", in: skyLight, as: CopyManagedDisplaySpaces.self)
+    private static let getSymbolicHotKeyValue = symbol("CGSGetSymbolicHotKeyValue", as: GetSymbolicHotKeyValue.self)
+    private static let isSymbolicHotKeyEnabled = symbol("CGSIsSymbolicHotKeyEnabled", as: IsSymbolicHotKeyEnabled.self)
 
     /// Private calls this macOS lacks, for the self-test. Each falls back, but less well.
     static var missing: [String] {
@@ -44,7 +50,9 @@ nonisolated enum Private {
          ("CoreDockSendNotification", coreDockSend != nil),
          ("SLSManagedDisplayGetCurrentSpace", displayCurrentSpace != nil && mainConnectionID != nil),
          ("SLSSpaceGetType", spaceGetType != nil),
-         ("SLSCopySpacesForWindows", copySpacesForWindows != nil)].filter { !$0.1 }.map(\.0)
+         ("SLSCopySpacesForWindows", copySpacesForWindows != nil),
+         ("SLSCopyManagedDisplaySpaces", copyManagedDisplaySpaces != nil),
+         ("CGSGetSymbolicHotKeyValue", getSymbolicHotKeyValue != nil && isSymbolicHotKeyEnabled != nil)].filter { !$0.1 }.map(\.0)
     }
 
     /// Whether a display's current Space is a full-screen one (Space type 4), as yabai
@@ -57,6 +65,34 @@ nonisolated enum Private {
         let space = displayCurrentSpace(connection, name)
         guard space != 0 else { return nil }
         return spaceGetType(connection, space) == 4
+    }
+
+    /// A display's Spaces in Mission Control order, as SkyLight types (0 desktop, 4 full
+    /// screen), and which one is showing. Nil when the call is missing.
+    static func spaces(on display: CGDirectDisplayID) -> (types: [Int], current: Int)? {
+        guard let mainConnectionID, let copyManagedDisplaySpaces,
+              let uuid = CGDisplayCreateUUIDFromDisplayID(display)?.takeRetainedValue(),
+              let name = CFUUIDCreateString(nil, uuid) as String?,
+              let displays = copyManagedDisplaySpaces(mainConnectionID())?.takeRetainedValue() as? [[String: Any]] else { return nil }
+        // With "Displays have separate Spaces" off, there's one entry, called "Main".
+        guard let entry = displays.first(where: { ($0["Display Identifier"] as? String)?.caseInsensitiveCompare(name) == .orderedSame })
+                ?? (displays.count == 1 ? displays.first : nil),
+              let list = entry["Spaces"] as? [[String: Any]],
+              let current = (entry["Current Space"] as? [String: Any])?["id64"] as? Int,
+              let index = list.firstIndex(where: { $0["id64"] as? Int == current }) else { return nil }
+        return (list.map { $0["type"] as? Int ?? -1 }, index)
+    }
+
+    /// The keys for Mission Control's "Move left a space" (or right), as the user set them.
+    /// Nil when the shortcut is off or the call is missing.
+    static func moveSpaceKey(left: Bool) -> (keyCode: CGKeyCode, flags: CGEventFlags)? {
+        guard let getSymbolicHotKeyValue, let isSymbolicHotKeyEnabled else { return nil }
+        let id: Int32 = left ? 79 : 81
+        var character: UInt16 = 0, keyCode: UInt16 = 0
+        var modifiers: UInt32 = 0
+        guard isSymbolicHotKeyEnabled(id), getSymbolicHotKeyValue(id, &character, &keyCode, &modifiers) == .success,
+              keyCode != 0xFFFF else { return nil }
+        return (CGKeyCode(keyCode), CGEventFlags(rawValue: UInt64(modifiers)))
     }
 
     /// The AX element with this id in an app, made from a remote token, as AltTab does.

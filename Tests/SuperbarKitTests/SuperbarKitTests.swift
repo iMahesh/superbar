@@ -335,3 +335,22 @@ private func resolve(_ list: AXQuery<[Int]>, focused: AXQuery<Int> = .none, main
     #expect(Set(Snap.allCases.map(\.shortcut)).count == Snap.allCases.count)
     #expect(Snap.leftHalf.shortcut.display == "⌃⌥←")
 }
+
+// MARK: Space hop
+
+@Test func spaceHopGoesToNearestDesktopOnTheLeft() {
+    #expect(SpaceHop.steps(types: [0, 4], current: 1) == -1)
+    #expect(SpaceHop.steps(types: [0, 0, 4, 4], current: 3) == -2)
+    #expect(SpaceHop.steps(types: [0, 4, 0, 4], current: 3) == -1)
+}
+
+@Test func spaceHopGoesRightWhenNoDesktopIsLeft() {
+    #expect(SpaceHop.steps(types: [4, 0], current: 0) == 1)
+}
+
+@Test func spaceHopStaysOnADesktop() {
+    #expect(SpaceHop.steps(types: [0, 4], current: 0) == nil)
+    #expect(SpaceHop.steps(types: [4], current: 0) == nil)
+    #expect(SpaceHop.steps(types: [0], current: 5) == nil)
+}
+

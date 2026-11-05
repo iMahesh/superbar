@@ -268,6 +268,15 @@ Acceptance:
 - [manual] Minimizing shrinks toward the bottom. Not checked by eye: my shell can't record the screen. Minimizing into the exact button isn't possible (no API).
 Status: built
 
+### S-029 Show desktop from a full-screen app
+As the user, the show desktop strip shows the desktop even while an app is in full screen.
+Depends: S-014
+Acceptance:
+- [unit] SpaceHop finds the nearest desktop Space, left first, then right; none when already on a desktop.
+- [manual] From a full-screen Space, the strip slides to the desktop and moves its windows aside; a second click brings them back and returns to the full-screen app. Verified 2026-11-05 three times in a row with a debug trigger (`SUPERBAR_DEBUG=1`, notification `com.maheshporeddy.superbar.debug.showDesktop`): Space 1088 (full screen) → 5 (desktop) with each window 1% on screen → back to 1088.
+- [manual] A real click on the strip. Not checked: synthetic clicks from my shell didn't reach the bar.
+Status: built
+
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek

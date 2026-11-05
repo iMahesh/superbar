@@ -61,6 +61,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 1.0)
         installMainMenu()
         wire()
+        if ProcessInfo.processInfo.environment["SUPERBAR_DEBUG"] != nil {
+            // Debugging, run from a trusted shell: press show desktop without a click.
+            DistributedNotificationCenter.default().addObserver(forName: .init("com.maheshporeddy.superbar.debug.showDesktop"),
+                                                                object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.model.toggleShowDesktop() }
+            }
+        }
         syncBars()
         tray.start()
 
