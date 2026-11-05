@@ -8,7 +8,7 @@
   <meta property="og:title" content="Superbar — a glass taskbar for macOS">
   <meta property="og:description" content="A Start menu, one button per app, window previews, window snapping, and a tray. On every display.">
   <meta property="og:image" content="assets/img/icon-512.png">
-  <meta name="color-scheme" content="dark light">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" href="assets/img/favicon-64.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
   <link rel="stylesheet" href="assets/style.css">
@@ -17,15 +17,18 @@
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="nav">
-    <div class="wrap nav-inner">
+    <div class="nav-inner">
       <a class="brand" href="#top" aria-label="Superbar home">
-        <img src="assets/img/favicon-64.png" alt="" width="28" height="28">
+        <img src="assets/img/favicon-64.png" alt="" width="20" height="20">
         <span>Superbar</span>
       </a>
       <nav aria-label="Sections">
-        <a href="#features">Features</a>
+        <a href="#start">Start</a>
+        <a href="#buttons">Buttons</a>
+        <a href="#autohide">Visibility</a>
         <a href="#snapping">Snapping</a>
-        <a href="#permissions">Permissions</a>
+        <a href="#tray">Tray</a>
+        <a href="#permissions">Privacy</a>
         <a class="nav-cta" href="#install">Install</a>
       </nav>
     </div>
@@ -33,276 +36,267 @@
 
   <main id="main">
     <section class="hero" id="top">
-      <div class="wrap hero-inner">
-        <img class="hero-icon" src="assets/img/icon-512.png" alt="Superbar app icon: a glowing blue orb above a small bar" width="128" height="128">
-        <p class="eyebrow">For macOS 26 · Every display</p>
-        <h1>The taskbar your Mac <br>never had.</h1>
-        <p class="lede">Superbar puts a glass bar along the bottom of every display: a Start menu that searches as you type, one button per app with window previews, snapping, a tray, and a clock. If you came to the Mac from a PC, it will feel like home.</p>
-        <div class="hero-ctas">
-          <a class="btn btn-primary" href="#install">Build from source</a>
-          <a class="btn btn-ghost" href="#features">See the features</a>
-          <a class="btn btn-ghost" id="repo-link" href="#" hidden>View on GitHub</a>
+      <div class="wrap">
+        <img class="hero-icon" src="assets/img/icon-512.png" alt="Superbar app icon: a glowing blue orb above a small bar" width="112" height="112">
+        <h1>Superbar</h1>
+        <p class="hero-sub">The taskbar your Mac never had.</p>
+        <p class="hero-lede">A Start menu that searches as you type, one button per app with window previews, snapping, a tray, and a clock. Along the bottom of every display.</p>
+        <div class="ctas">
+          <a class="btn" href="#install">Build from source</a>
+          <a class="more-link" href="#start">See the features</a>
+          <a class="more-link" id="repo-link" href="#" hidden>View on GitHub</a>
         </div>
       </div>
       <figure class="hero-shot">
-        <picture><source srcset="assets/img/bar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-dark.png" alt="The Superbar bar: Start orb, Mission Control, buttons for Finder, Safari, Mail, Notes, Music, and Terminal, then Trash, Wi-Fi, sound, battery, and the clock" width="2880" height="80"></picture>
-        <figcaption>The real bar. Every picture on this page is a screenshot of Superbar running on a Mac.</figcaption>
+        <picture><source srcset="assets/img/bar-apps-light.png" media="(max-width: 600px) and (prefers-color-scheme: light)"><source srcset="assets/img/bar-apps-dark.png" media="(max-width: 600px)"><source srcset="assets/img/bar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-dark.png" alt="The Superbar bar: Start orb, Mission Control, buttons for Finder, Safari, Mail, Notes, Music, and Terminal, then Trash, Wi-Fi, sound, battery, and the clock" width="2880" height="80"></picture>
+        <figcaption>Every picture on this page is a real screenshot of Superbar.</figcaption>
       </figure>
     </section>
 
-    <section class="section" id="features" aria-labelledby="features-title">
+    <section class="band alt" id="start" aria-labelledby="start-title">
       <div class="wrap">
-        <div class="section-head">
-          <p class="eyebrow">Features</p>
-          <h2 id="features-title">Everything a taskbar should do.</h2>
-          <p>Screenshots come from Superbar’s snapshot mode, with sample apps and windows. They follow your light or dark setting.</p>
+        <header class="band-head">
+          <p class="eyebrow">Start menu</p>
+          <h2 id="start-title">Start, searched.</h2>
+          <p class="lede">Click the orb or press <kbd>⌃</kbd><kbd>⎋</kbd> and start typing. Pinned and recent apps on the left, your folders and the power buttons on the right.</p>
+        </header>
+        <figure class="shot wide">
+          <div class="duo"><picture><source srcset="assets/img/start-menu-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/start-menu-dark.png" alt="The Start menu: pinned and recent apps on the left, folders and System Settings on the right, a search field and Shut Down at the bottom" loading="lazy" width="920" height="1080"></picture><picture><source srcset="assets/img/start-search-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/start-search-dark.png" alt="The Start menu searching for “saf”, with Safari as the top hit" loading="lazy" width="920" height="1080"></picture></div>
+          <figcaption>Start, then a search for “saf”.</figcaption>
+        </figure>
+        <ul class="facts">
+          <li><strong>Best match first.</strong> Names that start with what you typed, then word starts (“time” finds FaceTime), then anything that contains it.</li>
+          <li><strong>Return</strong> opens the top hit. <strong>Esc</strong> or a click outside closes Start.</li>
+          <li><strong>Your shortcut.</strong> Change it in Settings.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="band" id="buttons" aria-labelledby="buttons-title">
+      <div class="wrap">
+        <header class="band-head">
+          <p class="eyebrow">App buttons</p>
+          <h2 id="buttons-title">One click does the right thing.</h2>
+          <p class="lede">Superbar decides what a click means from the app’s state the moment you press. Each app gets one button, and its glow takes the color of its icon.</p>
+        </header>
+        <figure class="shot bar">
+          <div class="stack"><picture><source srcset="assets/img/bar-hover-safari-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-hover-safari-dark.png" alt="Superbar with the pointer over Safari, which glows blue" loading="lazy" width="900" height="80"></picture><picture><source srcset="assets/img/bar-hover-notes-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-hover-notes-dark.png" alt="Superbar with the pointer over Notes, which glows yellow" loading="lazy" width="900" height="80"></picture></div>
+          <figcaption>Hovering Safari, then Notes.</figcaption>
+        </figure>
+        <div class="rules-card">
+          <table class="rules">
+            <tbody>
+              <tr><td>Not running</td><td>Opens it</td></tr>
+              <tr><td>Running behind other apps</td><td>Brings its window forward</td></tr>
+              <tr><td>In front, one window</td><td>Minimizes it</td></tr>
+              <tr><td>In front, two or more windows</td><td>Lists them so you pick one</td></tr>
+              <tr><td>Only minimized windows</td><td>Restores the latest</td></tr>
+              <tr><td>Hidden with ⌘H</td><td>Unhides it</td></tr>
+            </tbody>
+          </table>
         </div>
-
-        <article class="feature" id="f-start">
-          <div class="feature-copy">
-            <h3>Start, searched</h3>
-            <p>Click the orb or press <kbd>⌃</kbd><kbd>⎋</kbd> and start typing. Your pinned apps and recent ones are listed first, with your folders, System Settings, and the power buttons on the right.</p>
-            <ul class="facts">
-              <li>Names that <strong>start with</strong> what you typed come first, then <strong>word starts</strong> (“time” finds FaceTime), then anything that contains it.</li>
-              <li><strong>Return</strong> opens the top hit. <strong>Esc</strong> or a click outside closes Start.</li>
-              <li>Change the shortcut in Settings.</li>
-            </ul>
-          </div>
-          <figure class="feature-shot">
-            <div class="duo">
-              <picture><source srcset="assets/img/start-menu-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/start-menu-dark.png" alt="The Start menu: pinned and recent apps on the left, folders and System Settings on the right, a search field and Shut Down at the bottom" loading="lazy" width="920" height="1080"></picture>
-              <picture><source srcset="assets/img/start-search-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/start-search-dark.png" alt="The Start menu searching for “saf”, with Safari as the top hit" loading="lazy" width="920" height="1080"></picture>
-            </div>
-            <figcaption>Start, then a search for “saf”.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature flip" id="f-click">
-          <div class="feature-copy">
-            <h3>One click does the right thing</h3>
-            <p>Superbar decides what a click means from the app’s state at the moment you press. Each app gets one button; the glow takes the color of its icon.</p>
-            <table class="rules">
-              <tbody>
-                <tr><td>Not running</td><td>Opens it</td></tr>
-                <tr><td>Running behind other apps</td><td>Brings its window forward</td></tr>
-                <tr><td>In front, one window</td><td>Minimizes it</td></tr>
-                <tr><td>In front, two or more windows</td><td>Lists them so you pick one</td></tr>
-                <tr><td>Only minimized windows</td><td>Restores the latest</td></tr>
-                <tr><td>Hidden with ⌘H</td><td>Unhides it</td></tr>
-              </tbody>
-            </table>
-            <ul class="facts">
-              <li><strong>Shift-click</strong> or middle-click opens a new window.</li>
-              <li><strong>Right-click</strong> lists the app’s windows, plus Snap Window, Pin, Close, and Quit.</li>
-              <li><strong>Drag</strong> a button to reorder your pins.</li>
-            </ul>
-          </div>
-          <figure class="feature-shot bar">
-            <div class="stack">
-              <picture><source srcset="assets/img/bar-hover-safari-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-hover-safari-dark.png" alt="Superbar with the pointer over Safari, which glows blue" loading="lazy" width="900" height="80"></picture>
-              <picture><source srcset="assets/img/bar-hover-notes-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-hover-notes-dark.png" alt="Superbar with the pointer over Notes, which glows yellow" loading="lazy" width="900" height="80"></picture>
-            </div>
-            <figcaption>Hovering Safari, then Notes. Each glow takes its icon’s color.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature" id="f-visibility">
-          <div class="feature-copy">
-            <h3>Only the apps you’re using</h3>
-            <p>Pinned apps always keep their button, even when they’re closed. Every other app gets a button only while it has a window open: an ordinary one, a minimized one, or one in full screen on another Space. Close its last window and the button goes.</p>
-            <p class="muted">An app with live windows gets a frame around its button. Notes and Music above are pinned but closed, so they show as plain icons. Terminal isn’t pinned; it has a button because a window is open.</p>
-          </div>
-          <figure class="feature-shot bar">
-            <picture><source srcset="assets/img/bar-apps-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-apps-dark.png" alt="Superbar with Finder, Safari, and Mail framed, Notes and Music as plain pins, and Terminal framed" loading="lazy" width="900" height="80"></picture>
-            <figcaption>Framed buttons have windows; plain ones are pins.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature flip" id="f-preview">
-          <div class="feature-copy">
-            <h3>Window previews</h3>
-            <p>Rest the pointer on a button and its windows appear as thumbnails, minimized ones marked. Click one to jump to it, or close it right there.</p>
-            <p class="muted">Thumbnails need Screen Recording. Without it, previews show the app icon, as in this screenshot.</p>
-          </div>
-          <figure class="feature-shot">
-            <picture><source srcset="assets/img/preview-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/preview-dark.png" alt="A preview popover for Safari with two windows, one marked Minimized" loading="lazy" width="864" height="352"></picture>
-            <figcaption>Safari’s two windows, one minimized.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature" id="f-autohide">
-          <div class="feature-copy">
-            <span class="badge">New</span>
-            <h3>Show it, auto-hide it, or keep it hidden</h3>
-            <p>Choose how the bar behaves in Settings:</p>
-            <ul class="facts">
-              <li><strong>Always show</strong> keeps it up and keeps windows clear of it.</li>
-              <li><strong>Auto-hide</strong> tucks it away and brings it back when you rest the pointer on the bottom edge. It stays up for the delay you set, from 0 to 10 seconds, after you move away.</li>
-              <li><strong>Always hide</strong> keeps it out of sight until you open Start with <kbd>⌃</kbd><kbd>⎋</kbd>; it goes again when Start closes.</li>
-            </ul>
-            <p class="muted">In every mode the bar slides away over full-screen apps and comes back from the bottom edge, one display at a time.</p>
-          </div>
-          <figure class="feature-shot mid">
-            <picture><source srcset="assets/img/settings-autohide-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-autohide-dark.png" alt="Superbar Settings with Visibility set to Auto-hide and a Hide after stepper" loading="lazy" width="1040" height="1284"></picture>
-            <figcaption>Auto-hide with its hide delay.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature flip" id="snapping">
-          <div class="feature-copy">
-            <span class="badge">New</span>
-            <h3>Snap windows into place</h3>
-            <p>Fill the screen with the front window, or snap it to a half, a quarter, or a third. Snapped windows stop at the top of the bar, so nothing ends up underneath it. The same choices are under <em>Snap Window</em> when you right-click an app’s button.</p>
+        <ul class="facts">
+          <li><strong>Shift-click</strong> or middle-click opens a new window.</li>
+          <li><strong>Right-click</strong> lists the app’s windows, plus Snap Window, Pin, Close, and Quit.</li>
+          <li><strong>Drag</strong> a button to reorder your pins.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="band alt" id="visibility" aria-labelledby="visibility-title">
+      <div class="wrap">
+        <header class="band-head">
+          <p class="eyebrow">Buttons</p>
+          <h2 id="visibility-title">Only the apps you’re using.</h2>
+          <p class="lede">Pinned apps always keep their button. Every other app gets one only while it has a window open, minimized, or in full screen on another Space. Close its last window and the button goes.</p>
+        </header>
+        <figure class="shot bar">
+          <picture><source srcset="assets/img/bar-apps-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-apps-dark.png" alt="Superbar with Finder, Safari, and Mail framed, Notes and Music as plain pins, and Terminal framed" loading="lazy" width="900" height="80"></picture>
+          <figcaption>Framed buttons have windows. Notes and Music are pinned but closed; Terminal isn’t pinned but has a window open.</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section class="band" id="previews" aria-labelledby="previews-title">
+      <div class="wrap">
+        <header class="band-head">
+          <p class="eyebrow">Previews</p>
+          <h2 id="previews-title">See every window before you pick.</h2>
+          <p class="lede">Rest the pointer on a button and its windows appear, minimized ones marked. Click one to jump to it, or close it right there.</p>
+        </header>
+        <figure class="shot mid">
+          <picture><source srcset="assets/img/preview-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/preview-dark.png" alt="A preview popover for Safari with two windows, one marked Minimized" loading="lazy" width="864" height="352"></picture>
+          <figcaption>Safari’s two windows, one minimized. With Screen Recording on, these are live thumbnails.</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section class="band alt" id="autohide" aria-labelledby="autohide-title">
+      <div class="wrap">
+        <header class="band-head">
+          <span class="badge">New</span><p class="eyebrow">Visibility</p>
+          <h2 id="autohide-title">Show it. Hide it. Your call.</h2>
+          <p class="lede">Keep the bar up, let it auto-hide, or keep it hidden until you open Start. In every mode it slides away over full-screen apps and comes back from the bottom edge.</p>
+        </header>
+        <figure class="shot settings">
+          <picture><source srcset="assets/img/settings-autohide-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-autohide-dark.png" alt="Superbar Settings with Visibility set to Auto-hide and a Hide after stepper" loading="lazy" width="1040" height="1284"></picture>
+          <figcaption>Auto-hide with its hide delay.</figcaption>
+        </figure>
+        <ul class="facts">
+          <li><strong>Always show</strong> keeps it up and keeps windows clear of it.</li>
+          <li><strong>Auto-hide</strong> comes back when you rest the pointer on the bottom edge, and waits the delay you set, 0 to 10 seconds, before it goes.</li>
+          <li><strong>Always hide</strong> stays out of sight until you open Start with <kbd>⌃</kbd><kbd>⎋</kbd>.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="band" id="snapping" aria-labelledby="snapping-title">
+      <div class="wrap">
+        <header class="band-head">
+          <span class="badge">New</span><p class="eyebrow">Window snapping</p>
+          <h2 id="snapping-title">Snap windows into place.</h2>
+          <p class="lede">Fill the screen with the front window, or snap it to a half, a quarter, or a third. Snapped windows stop at the top of the bar. The same choices are under Snap Window when you right-click a button.</p>
+        </header>
+        <div class="split">
+        <figure class="shot settings">
+          <picture><source srcset="assets/img/settings-snap-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-snap-dark.png" alt="The Window snapping section of Superbar Settings, listing snaps with their shortcuts" loading="lazy" width="1040" height="900"></picture>
+          <figcaption>The Window snapping section of Settings.</figcaption>
+        </figure>
+          <div class="keys-card">
             <table class="keys">
               <thead><tr><th>Snap to</th><th>Shortcut</th></tr></thead>
               <tbody>
                 <tr><td>Fill the screen</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>↩</kbd></td></tr>
-                <tr><td>Left, right, top, or bottom half</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td></tr>
-                <tr><td>Quarters, laid out like the screen</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>U</kbd> <kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd></td></tr>
-                <tr><td>Left, center, or right third</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd></td></tr>
+                <tr><td>Left, right, top, or bottom half</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></td></tr>
+                <tr><td>Quarters, laid out like the screen</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>U</kbd><kbd>I</kbd><kbd>J</kbd><kbd>K</kbd></td></tr>
+                <tr><td>Left, center, or right third</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd></td></tr>
               </tbody>
             </table>
-            <p class="muted" style="margin-top:14px">Turn the shortcuts off in Settings if another app uses them; Superbar marks any shortcut it couldn’t claim.</p>
+            <p class="note">Turn the shortcuts off in Settings if another app uses them. Superbar marks any it couldn’t claim.</p>
           </div>
-          <figure class="feature-shot mid">
-            <picture><source srcset="assets/img/settings-snap-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-snap-dark.png" alt="The Window snapping section of Superbar Settings, listing snaps with their shortcuts" loading="lazy" width="1040" height="900"></picture>
-            <figcaption>The Window snapping section of Settings.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature" id="f-dock">
-          <div class="feature-copy">
-            <span class="badge">New</span>
-            <h3>Windows stay clear, and the Dock stays out of the way</h3>
-            <p>macOS has no way for an app to reserve the bottom of the screen, so Superbar keeps windows clear of the bar. A window that reaches under it moves up if there’s room, or keeps its top and has its bottom trimmed. Dragging a window down is never fought.</p>
-            <p>Hide the macOS Dock and Superbar keeps it at the bottom with small icons, so minimized windows shrink toward the bar and Mission Control shows the bar, not the Dock. <em>Restore Dock</em> puts back every Dock setting exactly as it was.</p>
-          </div>
-          <figure class="feature-shot mid">
-            <picture><source srcset="assets/img/settings-general-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-general-dark.png" alt="Superbar Settings, General tab: size, visibility, keep windows above Superbar, and hide the macOS Dock" loading="lazy" width="1040" height="1284"></picture>
-            <figcaption>Settings, General tab.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature flip" id="f-tray">
-          <div class="feature-copy">
-            <h3>A tray that works</h3>
-            <p>Turn Wi-Fi on or off, set the volume or mute, and check the battery and time left, each from a small popover. Hide any of them in Settings. Battery appears only on a Mac with a battery.</p>
-          </div>
-          <figure class="feature-shot">
-            <picture><source srcset="assets/img/bar-tray-light.png" media="(prefers-color-scheme: light)"><img class="tray-strip" src="assets/img/bar-tray-dark.png" alt="The right end of Superbar: Trash, Wi-Fi, sound, battery, and the clock" loading="lazy" width="440" height="80"></picture>
-            <div class="duo" style="margin-top:16px">
-              <picture><source srcset="assets/img/tray-sound-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-sound-dark.png" alt="The Sound popover with a mute button and a volume slider" loading="lazy" width="560" height="248"></picture>
-              <picture><source srcset="assets/img/tray-network-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-network-dark.png" alt="The Wi-Fi popover with an on/off switch" loading="lazy" width="560" height="272"></picture>
-            </div>
-            <div class="duo" style="margin-top:16px">
-              <picture><source srcset="assets/img/tray-battery-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-battery-dark.png" alt="The Battery popover with charge and time left" loading="lazy" width="560" height="272"></picture>
-            </div>
-            <figcaption>The tray, then the Sound, Wi-Fi, and Battery popovers.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature" id="f-calendar">
-          <div class="feature-copy">
-            <h3>Clock and calendar</h3>
-            <p>Click the clock for a month calendar. Type or step to any date, click a day to pick it, and press Today to come back. The clock follows your Mac’s 12 or 24 hour setting.</p>
-          </div>
-          <figure class="feature-shot narrow">
-            <picture><source srcset="assets/img/calendar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/calendar-dark.png" alt="The calendar popover with a date field, a Today button, and the month grid" loading="lazy" width="528" height="640"></picture>
-            <figcaption>The calendar.</figcaption>
-          </figure>
-        </article>
-
-        <article class="feature flip" id="f-size">
-          <div class="feature-copy">
-            <h3>Normal or small</h3>
-            <p>A 40 pt bar, or a slimmer one with smaller icons. Changes apply at once.</p>
-          </div>
-          <figure class="feature-shot bar">
-            <picture><source srcset="assets/img/bar-small-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-small-dark.png" alt="Superbar at its small size" loading="lazy" width="900" height="60"></picture>
-            <figcaption>The small bar.</figcaption>
-          </figure>
-        </article>
-
-        <div class="grid">
+        </div>
+      </div>
+    </section>
+    <section class="band alt" id="dock" aria-labelledby="dock-title">
+      <div class="wrap">
+        <header class="band-head">
+          <span class="badge">New</span><p class="eyebrow">Windows and Dock</p>
+          <h2 id="dock-title">Nothing hides behind the bar.</h2>
+          <p class="lede">macOS can’t reserve the bottom of the screen, so Superbar keeps windows clear of the bar: a window that reaches under it moves up, or has its bottom trimmed. Hide the Dock and Superbar keeps it at the bottom with small icons, so minimized windows shrink toward the bar.</p>
+        </header>
+        <figure class="shot settings">
+          <picture><source srcset="assets/img/settings-general-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-general-dark.png" alt="Superbar Settings, General tab: size, visibility, keep windows above Superbar, and hide the macOS Dock" loading="lazy" width="1040" height="1284"></picture>
+          <figcaption>Settings, General tab. Restore Dock puts back every Dock setting exactly.</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section class="band" id="tray" aria-labelledby="tray-title">
+      <div class="wrap">
+        <header class="band-head">
+          <p class="eyebrow">Tray</p>
+          <h2 id="tray-title">A tray that works.</h2>
+          <p class="lede">Turn Wi-Fi on or off, set the volume or mute, and check the battery and time left, each from a small popover. Hide any of them in Settings.</p>
+        </header>
+        <figure class="shot tray">
+          <picture><source srcset="assets/img/bar-tray-light.png" media="(prefers-color-scheme: light)"><img class="tray-strip" src="assets/img/bar-tray-dark.png" alt="The right end of Superbar: Trash, Wi-Fi, sound, battery, and the clock" loading="lazy" width="440" height="80"></picture>
+          <figcaption>Trash, Wi-Fi, sound, battery, and the clock.</figcaption>
+        </figure>
+        <div class="trio">
+          <figure class="shot"><picture><source srcset="assets/img/tray-sound-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-sound-dark.png" alt="The Sound popover with a mute button and a volume slider" loading="lazy" width="560" height="248"></picture><figcaption>Sound</figcaption></figure>
+          <figure class="shot"><picture><source srcset="assets/img/tray-network-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-network-dark.png" alt="The Wi-Fi popover with an on/off switch" loading="lazy" width="560" height="272"></picture><figcaption>Wi-Fi</figcaption></figure>
+          <figure class="shot"><picture><source srcset="assets/img/tray-battery-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-battery-dark.png" alt="The Battery popover with charge and time left" loading="lazy" width="560" height="272"></picture><figcaption>Battery</figcaption></figure>
+        </div>
+      </div>
+    </section>
+    <section class="band alt" id="calendar" aria-labelledby="calendar-title">
+      <div class="wrap">
+        <header class="band-head">
+          <p class="eyebrow">Clock</p>
+          <h2 id="calendar-title">Any date, one click away.</h2>
+          <p class="lede">Click the clock for a month calendar. Type or step to any date, click a day, and press Today to come back. The clock follows your Mac’s 12 or 24 hour setting.</p>
+        </header>
+        <figure class="shot narrow">
+          <picture><source srcset="assets/img/calendar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/calendar-dark.png" alt="The calendar popover with a date field, a Today button, and the month grid" loading="lazy" width="528" height="640"></picture>
+          <figcaption>The calendar.</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section class="band" id="more" aria-labelledby="more-title">
+      <div class="wrap">
+        <header class="band-head">
+          <h2 id="more-title">And there’s more.</h2>
+        </header>
+        <figure class="shot bar">
+          <picture><source srcset="assets/img/bar-small-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-small-dark.png" alt="Superbar at its small size" loading="lazy" width="900" height="60"></picture>
+          <figcaption>The small bar, for more room.</figcaption>
+        </figure>
+        <div class="tiles">
           <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-display"/></svg></div>
+            <svg class="tile-icon" aria-hidden="true"><use href="#i-display"/></svg>
             <h3>A bar on every display</h3>
             <p>Plug in a monitor and it gets its own bar, with the same apps and window counts. Start and the calendar open on the display you’re using.</p>
           </div>
           <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-trash"/></svg></div>
+            <svg class="tile-icon" aria-hidden="true"><use href="#i-trash"/></svg>
             <h3>Trash, without the Dock</h3>
-            <p>A trash icon beside the tray opens Finder’s Trash, with Empty and Put Back. Hide the Dock and you lose nothing.</p>
+            <p>A trash icon beside the tray opens Finder’s Trash, with Empty and Put Back.</p>
           </div>
           <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-mc"/></svg></div>
+            <svg class="tile-icon" aria-hidden="true"><use href="#i-mc"/></svg>
             <h3>Mission Control and desktop</h3>
-            <p>A button right after the orb opens Mission Control. The thin strip at the far right shows the desktop; a second click brings your windows back.</p>
+            <p>A button after the orb opens Mission Control. The strip at the far right shows the desktop; click again to bring your windows back.</p>
           </div>
         </div>
       </div>
     </section>
-
-    <section class="section" id="permissions" aria-labelledby="perm-title">
+    <section class="band alt" id="permissions" aria-labelledby="permissions-title">
       <div class="wrap">
-        <div class="section-head">
-          <p class="eyebrow">Permissions</p>
-          <h2 id="perm-title">What it asks for, and why.</h2>
-          <p>Superbar asks for each permission on its own and keeps working without it. Settings shows each one as On or Off, with a button to grant it.</p>
-        </div>
-        <article class="feature" id="f-perms">
-          <div class="perms" style="grid-template-columns:1fr">
-            <div class="perm">
-              <h3>Accessibility</h3>
-              <p>Lists each app’s windows, and focuses, minimizes, closes, moves, and snaps them. Without it, buttons still switch apps, but there are no window counts, no picking a window, no snapping, and no keeping windows above the bar.</p>
-            </div>
-            <div class="perm">
-              <h3>Screen Recording</h3>
-              <p>Draws the window thumbnails in previews and fills in some window titles. Without it, previews show the app icon instead.</p>
-            </div>
-            <div class="perm">
-              <h3>Automation</h3>
-              <p>Asks System Events to restart, shut down, or log out, so apps still offer to save your work. Asks Finder to open its Trash. Each is asked for the first time you use it.</p>
-            </div>
+        <header class="band-head">
+          <p class="eyebrow">Privacy</p>
+          <h2 id="permissions-title">Asks for only what it uses.</h2>
+          <p class="lede">Superbar asks for each permission on its own and keeps working without it. Settings shows each one as On or Off, with a button to grant it.</p>
+        </header>
+        <div class="tiles">
+          <div class="tile">
+            <h3>Accessibility</h3>
+            <p>Lists each app’s windows, and focuses, minimizes, closes, moves, and snaps them. Without it, buttons still switch apps.</p>
           </div>
-          <figure class="feature-shot mid">
-            <picture><source srcset="assets/img/settings-permissions-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-permissions-dark.png" alt="Superbar Settings, Permissions tab, listing each permission with its state" loading="lazy" width="1040" height="556"></picture>
-            <figcaption>Settings, Permissions tab.</figcaption>
-          </figure>
-        </article>
+          <div class="tile">
+            <h3>Screen Recording</h3>
+            <p>Draws window thumbnails in previews and fills in some titles. Without it, previews show the app icon.</p>
+          </div>
+          <div class="tile">
+            <h3>Automation</h3>
+            <p>Asks System Events to restart, shut down, or log out, so apps offer to save your work, and Finder to open its Trash.</p>
+          </div>
+        </div>
+        <figure class="shot settings">
+          <picture><source srcset="assets/img/settings-permissions-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-permissions-dark.png" alt="Superbar Settings, Permissions tab, listing each permission with its state" loading="lazy" width="1040" height="556"></picture>
+          <figcaption>Settings, Permissions tab.</figcaption>
+        </figure>
       </div>
     </section>
-
-    <section class="section" id="install" aria-labelledby="install-title">
-      <div class="wrap install">
-        <div class="section-head">
+    <section class="band" id="install" aria-labelledby="install-title">
+      <div class="wrap">
+        <header class="band-head">
           <p class="eyebrow">Install</p>
           <h2 id="install-title">Build it in a minute.</h2>
-          <p>You need a Mac on macOS 26 and Apple’s command line tools (Xcode works too). Clone the repository, then from its folder:</p>
-        </div>
+          <p class="lede">You need a Mac on macOS 26 and Apple’s command line tools (Xcode works too). Clone the repository, then from its folder:</p>
+        </header>
         <ol class="steps">
           <li>
-            <p>Install Apple’s command line tools, if you don’t have them:</p>
+            <p>Install Apple’s command line tools, if you don’t have them.</p>
             <div class="code"><code>xcode-select --install</code><button class="copy" data-copy="xcode-select --install">Copy</button></div>
           </li>
           <li>
-            <p>Build Superbar, install it to <code>~/Applications</code>, and open it:</p>
+            <p>Build Superbar, install it to <code>~/Applications</code>, and open it.</p>
             <div class="code"><code>./build.sh --open</code><button class="copy" data-copy="./build.sh --open">Copy</button></div>
           </li>
-          <li>
-            <p>Grant Accessibility when Superbar asks. Settings opens on the Permissions tab and each row turns On within a few seconds.</p>
-          </li>
-          <li>
-            <p>Optional: in Settings, turn on <em>Hide the macOS Dock</em> so the bottom edge belongs to Superbar. <em>Restore Dock</em> puts it back.</p>
-          </li>
+          <li><p>Grant Accessibility when Superbar asks. Each row in Settings turns On within a few seconds.</p></li>
+          <li><p>Optional: turn on <em>Hide the macOS Dock</em> in Settings. <em>Restore Dock</em> puts it back.</p></li>
         </ol>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="wrap footer-inner">
-      <div class="brand"><img src="assets/img/favicon-64.png" alt="" width="22" height="22"><span>Superbar</span></div>
+    <div class="wrap">
+      <p>Screenshots come from Superbar’s snapshot mode, with sample apps and windows, and follow your light or dark setting.</p>
       <p>Superbar is an independent project, not affiliated with Apple or Microsoft. Mac and macOS are trademarks of Apple Inc.</p>
     </div>
   </footer>
