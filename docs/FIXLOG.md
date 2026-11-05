@@ -48,3 +48,5 @@ Two Safari windows in full screen: the button said 1 window and its preview and 
 ## Show desktop did nothing in full screen (2026-11-05)
 The strip toggled the Dock's show desktop, which acts only on a desktop Space; a full-screen Space has no desktop. Fix: from a full-screen Space, slide to the nearest desktop Space with the user's own "Move left a space" keys (read with `CGSGetSymbolicHotKeyValue`, sent as CGEvents; needs Accessibility), wait for the slide, then show the desktop; the second click returns. Trap: a key sent while the Dock is still sliding windows back is dropped, so each step is checked against `SLSCopyManagedDisplaySpaces` and sent again (up to three times).
 
+## The Wi-Fi popover showed no network names (2026-11-05)
+It said only "Connected over Wi-Fi": since macOS 14, CoreWLAN returns nil names to apps without Location access, and Superbar never asked. Fix: `NSLocationUsageDescription` in Info.plist, ask once when the popover first opens, and a note with a link to Location Services if it's off. Rebuilding the ad hoc app may reset the grant, like Accessibility.

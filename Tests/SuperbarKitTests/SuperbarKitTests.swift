@@ -354,3 +354,22 @@ private func resolve(_ list: AXQuery<[Int]>, focused: AXQuery<Int> = .none, main
     #expect(SpaceHop.steps(types: [0], current: 5) == nil)
 }
 
+// MARK: Wi-Fi list
+
+@Test func wifiListKeepsStrongestOfEachNameAndDropsHiddenAndConnected() {
+    let scan = [WiFiNetwork(name: "Home", rssi: -50, secure: true),
+                WiFiNetwork(name: "Cafe", rssi: -80, secure: false),
+                WiFiNetwork(name: "Cafe", rssi: -62, secure: false),
+                WiFiNetwork(name: "", rssi: -40, secure: true),
+                WiFiNetwork(name: "Office", rssi: -75, secure: true, known: true)]
+    let rows = WiFiList.rows(scan, connected: "Home")
+    #expect(rows.map(\.name) == ["Office", "Cafe"])
+    #expect(rows[1].rssi == -62)
+}
+
+@Test func wifiSignalHasFourLevels() {
+    #expect(WiFiNetwork(name: "a", rssi: -45, secure: true).signal == 1)
+    #expect(WiFiNetwork(name: "a", rssi: -65, secure: true).signal == 0.67)
+    #expect(WiFiNetwork(name: "a", rssi: -80, secure: true).signal == 0.33)
+    #expect(WiFiNetwork(name: "a", rssi: -90, secure: true).signal == 0)
+}

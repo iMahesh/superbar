@@ -67,6 +67,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                                 object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.model.toggleShowDesktop() }
             }
+            DistributedNotificationCenter.default().addObserver(forName: .init("com.maheshporeddy.superbar.debug.wifi"),
+                                                                object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    let f = NSScreen.screens[0].frame
+                    self.trayPopovers.toggle(.network, anchor: NSRect(x: f.maxX - 200, y: f.minY, width: 20, height: 20))
+                    Task {
+                        try? await Task.sleep(for: .seconds(6))
+                        NSLog("wifi: on %@ name %@ rssi %@ location %@ nearby %@", "\(self.tray.wifiOn as Any)",
+                              "\(self.tray.wifiName as Any)", "\(self.tray.wifiRSSI as Any)", "\(self.tray.locationAllowed as Any)",
+                              self.tray.nearby.map { "\($0.name) \($0.rssi) \($0.secure ? "secure" : "open")\($0.known ? " saved" : "")" }.joined(separator: ", "))
+                    }
+                }
+            }
         }
         syncBars()
         tray.start()

@@ -1,5 +1,6 @@
 import AppKit
 import CoreAudio
+import CoreLocation
 import CoreWLAN
 import IOKit.ps
 import Network
@@ -25,13 +26,24 @@ final class TrayModel {
     private(set) var battery: Battery?
     /// Nil on a Mac without Wi-Fi.
     private(set) var wifiOn: Bool?
-    /// The network name. macOS hides it from apps without Location access, so often nil.
+    /// The network name. macOS hides it from apps without Location access.
     private(set) var wifiName: String?
+    private(set) var wifiRSSI: Int?
+    /// Other networks in range, from the last scan.
+    private(set) var nearby: [WiFiNetwork] = []
+    private(set) var scanning = false
+    /// The network being joined, while it is.
+    private(set) var joining: String?
+    /// Network names need Location access: nil until the user has been asked.
+    private(set) var locationAllowed: Bool?
     private(set) var volumeSettable = false
     /// When the clock redraws next: the start of the next minute.
     private(set) var nextTick = Date()
 
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var location: LocationAccess?
+    /// Snapshots: keep the seeded Wi-Fi instead of reading the real one.
+    @ObservationIgnored private var seeded = false
     @ObservationIgnored private var monitor: NWPathMonitor?
     @ObservationIgnored private var batterySource: CFRunLoopSource?
     @ObservationIgnored private var volumeDevice: AudioDeviceID = 0
@@ -213,9 +225,11 @@ final class TrayModel {
     // MARK: Wi-Fi
 
     func readWiFi() {
-        guard let interface = CWWiFiClient.shared().interface() else { wifiOn = nil; wifiName = nil; return }
+        readLocationAccess()
+        guard let interface = CWWiFiClient.shared().interface() else { wifiOn = nil; wifiName = nil; wifiRSSI = nil; return }
         wifiOn = interface.powerOn()
         wifiName = interface.ssid()
+        wifiRSSI = interface.ssid() == nil ? nil : interface.rssiValue()
     }
 
     /// Turns Wi-Fi on or off. Returns an error message, or nil.
@@ -224,6 +238,7 @@ final class TrayModel {
         do {
             try interface.setPower(on)
             readWiFi()
+            if on { scanWiFi() } else { nearby = [] }
             return nil
         } catch {
             readWiFi()
@@ -231,11 +246,63 @@ final class TrayModel {
         }
     }
 
+    /// When the popover opens: ask for Location the first time, then look for networks.
+    func openedNetwork() {
+        guard !seeded else { return }
+        readWiFi()
+        if locationAllowed == nil { requestLocation() }
+        scanWiFi()
+    }
+
+    func scanWiFi() {
+        guard wifiOn == true, !scanning else { return }
+        scanning = true
+        Task {
+            let found = await WiFiWorker.scan()
+            scanning = false
+            readWiFi()
+            if let found { nearby = WiFiList.rows(found, connected: wifiName) }
+        }
+    }
+
+    /// Joins a network; a password only for a new secured one. Returns an error message, or nil.
+    func join(_ network: WiFiNetwork, password: String?) async -> String? {
+        joining = network.name
+        let error = await WiFiWorker.join(network.name, password: password)
+        joining = nil
+        readWiFi()
+        if error == nil { nearby = WiFiList.rows(nearby, connected: wifiName) }
+        return error
+    }
+
+    func disconnect() {
+        CWWiFiClient.shared().interface()?.disassociate()
+        readWiFi()
+        scanWiFi()
+    }
+
+    private func readLocationAccess() {
+        switch CLLocationManager().authorizationStatus {
+        case .notDetermined: locationAllowed = nil
+        case .authorizedAlways: locationAllowed = true
+        default: locationAllowed = false
+        }
+    }
+
+    private func requestLocation() {
+        let access = location ?? LocationAccess { [weak self] in
+            self?.readWiFi()
+            self?.scanWiFi()
+        }
+        location = access
+        access.request()
+    }
+
     var networkStatus: String {
         switch network {
         case .offline: return wifiOn == false ? "Wi-Fi is off" : "Not connected"
         case .wired: return "Connected over Ethernet"
-        case .wifi: return wifiName.map { "Connected to \($0)" } ?? "Connected over Wi-Fi"
+        case .wifi: return wifiName ?? "Connected over Wi-Fi"
         case .other: return "Connected"
         }
     }
@@ -300,11 +367,63 @@ final class TrayModel {
     func setForTesting(now: Date, volume: Float?, network: NetworkState, battery: Battery?, wifiName: String? = nil) {
         self.wifiOn = true
         self.wifiName = wifiName
+        self.wifiRSSI = wifiName == nil ? nil : -52
+        self.locationAllowed = true
+        self.nearby = WiFiList.rows([WiFiNetwork(name: "Home 5G", rssi: -48, secure: true, known: true),
+                                     WiFiNetwork(name: "Cafe Guest", rssi: -63, secure: false),
+                                     WiFiNetwork(name: "Neighbors", rssi: -71, secure: true),
+                                     WiFiNetwork(name: "Printer-Direct", rssi: -80, secure: true)], connected: wifiName)
+        self.seeded = true
         self.volumeSettable = true
         self.now = now
         self.volume = volume
         self.muted = false
         self.network = network
         self.battery = battery
+    }
+}
+
+/// Asks for Location access, which macOS requires before it tells an app Wi-Fi network names.
+final class LocationAccess: NSObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    private let onChange: () -> Void
+
+    init(onChange: @escaping () -> Void) {
+        self.onChange = onChange
+        super.init()
+        manager.delegate = self
+    }
+
+    func request() { manager.requestWhenInUseAuthorization() }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor in self.onChange() }
+    }
+}
+
+/// CoreWLAN calls that take seconds (a scan is 1 to 3), off the main thread.
+nonisolated enum WiFiWorker {
+    @concurrent
+    static func scan() async -> [WiFiNetwork]? {
+        guard let interface = CWWiFiClient.shared().interface(),
+              let found = try? interface.scanForNetworks(withName: nil) else { return nil }
+        let known = Set((interface.configuration()?.networkProfiles.array as? [CWNetworkProfile] ?? []).compactMap(\.ssid))
+        return found.compactMap { network in
+            guard let name = network.ssid else { return nil }
+            return WiFiNetwork(name: name, rssi: network.rssiValue, secure: !network.supportsSecurity(.none), known: known.contains(name))
+        }
+    }
+
+    @concurrent
+    static func join(_ name: String, password: String?) async -> String? {
+        guard let interface = CWWiFiClient.shared().interface() else { return "This Mac has no Wi-Fi." }
+        do {
+            let found = try interface.scanForNetworks(withName: name)
+            guard let network = found.max(by: { $0.rssiValue < $1.rssiValue }) else { return "\(name) is out of range." }
+            try interface.associate(to: network, password: password)
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
     }
 }
