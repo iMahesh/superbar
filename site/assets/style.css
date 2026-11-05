@@ -151,6 +151,7 @@ h1, h2, .hero-sub, .lede, .hero-lede { text-wrap: balance; }
 
 /* Footer */
 .footer { background: var(--bg-alt); border-top: 1px solid var(--line); padding: 24px 0 40px; }
+.footer .contact { font-size: 14px; color: var(--text); margin-bottom: 14px; }
 .footer p { margin: 0 0 8px; font-size: 12px; line-height: 1.33; color: var(--muted); letter-spacing: 0; }
 
 @media (max-width: 734px) { .band { padding: 72px 0; } .hero { padding: 64px 0 48px; } .eyebrow { font-size: 17px; } }
