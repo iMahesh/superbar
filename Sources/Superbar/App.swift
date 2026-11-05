@@ -63,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startWindowFitter()
         HotkeyCenter.shared.onStart = { [weak self] in self?.toggleStart() }
         HotkeyCenter.shared.register(settings.startHotkey)
+        startSnapping()
         permissions.onAccessibilityGranted = { [weak self] in
             self?.model.accessibilityGranted()
             WindowFitter.shared.scanAll()
@@ -115,6 +116,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.preview.hide()
             self?.trayPopovers.close()
         }
+        // Snapping keeps windows above the bar of their screen while it keeps its space.
+        WindowSnapper.shared.reservedHeight = { [unowned self] screen in
+            guard settings.barVisibility.reservesSpace,
+                  let bar = bars.first(where: { $0.displayID == screen.displayID }), !bar.isFullScreen else { return 0 }
+            return settings.metrics.height
+        }
+        WindowSnapper.shared.onNeedsAccessibility = { [weak self] in self?.settingsWindow.show(tab: .permissions) }
         Power.onAutomationDenied = { [weak self] in self?.settingsWindow.show(tab: .permissions) }
     }
 
@@ -148,6 +156,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         fitter.scanAll()
+    }
+
+    /// The ⌃⌥ shortcuts snap the front window.
+    private func startSnapping() {
+        HotkeyCenter.shared.onSnap = { WindowSnapper.shared.snapFrontWindow($0) }
+        HotkeyCenter.shared.registerSnaps(settings.snapShortcuts)
     }
 
     func toggleStart() {

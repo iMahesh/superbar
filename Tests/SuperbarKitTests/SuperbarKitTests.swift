@@ -283,3 +283,37 @@ private func resolve(_ list: AXQuery<[Int]>, focused: AXQuery<Int> = .none, main
     // The main screen's area ignores it.
     #expect(WorkArea.fit(low, top: 24, bottom: 860, minX: 0, maxX: 1440) == nil)
 }
+
+@Test func snapFramesTileTheAreaWithoutGaps() {
+    // A 1440 × 900 screen: 33 pt menu bar, 40 pt Superbar.
+    let area = SnapArea.of(screen: CGRect(x: 0, y: 0, width: 1440, height: 900),
+                           visible: CGRect(x: 0, y: 33, width: 1440, height: 867), barHeight: 40)
+    #expect(area == CGRect(x: 0, y: 33, width: 1440, height: 827))
+    #expect(Snap.fill.frame(in: area) == area)
+    #expect(Snap.leftHalf.frame(in: area) == CGRect(x: 0, y: 33, width: 720, height: 827))
+    #expect(Snap.rightHalf.frame(in: area) == CGRect(x: 720, y: 33, width: 720, height: 827))
+    let top = Snap.topHalf.frame(in: area), bottom = Snap.bottomHalf.frame(in: area)
+    #expect(top.minY == 33 && top.maxY == bottom.minY && bottom.maxY == 860)
+    #expect(Snap.bottomRight.frame(in: area).maxX == 1440 && Snap.bottomRight.frame(in: area).maxY == 860)
+    #expect(Snap.topLeft.frame(in: area).union(Snap.bottomRight.frame(in: area)) == area)
+    let thirds = [Snap.leftThird, .centerThird, .rightThird].map { $0.frame(in: area) }
+    #expect(thirds.map(\.width) == [480, 480, 480])
+    #expect(thirds[0].maxX == thirds[1].minX && thirds[1].maxX == thirds[2].minX)
+    // Nothing reaches under the bar.
+    #expect(Snap.allCases.allSatisfy { $0.frame(in: area).maxY <= 860 })
+}
+
+@Test func snapAreaRespectsTheDockAndOtherScreens() {
+    // A second screen right of the main one, with the Dock (60 pt) visible at its bottom.
+    let screen = CGRect(x: 1440, y: -200, width: 2560, height: 1440)
+    let visible = CGRect(x: 1440, y: -175, width: 2560, height: 1355)
+    #expect(SnapArea.of(screen: screen, visible: visible, barHeight: 40).maxY == 1180)   // the Dock is taller
+    #expect(SnapArea.of(screen: screen, visible: CGRect(x: 1440, y: -175, width: 2560, height: 1415), barHeight: 40).maxY == 1200)
+    let thirds = Snap.rightThird.frame(in: SnapArea.of(screen: screen, visible: visible, barHeight: 40))
+    #expect(thirds.maxX == 4000)
+}
+
+@Test func snapShortcutsAreDistinct() {
+    #expect(Set(Snap.allCases.map(\.shortcut)).count == Snap.allCases.count)
+    #expect(Snap.leftHalf.shortcut.display == "⌃⌥←")
+}

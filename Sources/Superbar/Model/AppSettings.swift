@@ -100,6 +100,14 @@ final class AppSettings {
         if on { hiddenTrayIcons.remove(icon) } else { hiddenTrayIcons.insert(icon) }
     }
 
+    /// The ⌃⌥ shortcuts that snap the front window. Default on.
+    var snapShortcuts: Bool {
+        didSet {
+            defaults.set(snapShortcuts, forKey: Store.Key.snapShortcuts)
+            HotkeyCenter.shared.registerSnaps(snapShortcuts)
+        }
+    }
+
     var startHotkey: KeyCombo {
         didSet {
             if let data = try? JSONEncoder().encode(startHotkey) { defaults.set(data, forKey: Store.Key.startHotkey) }
@@ -119,6 +127,7 @@ final class AppSettings {
         autoHideDelay = BarVisibility.clampDelay(defaults.object(forKey: Store.Key.autoHideDelay) as? Double ?? 0.5)
         keepWindowsAbove = defaults.object(forKey: Store.Key.keepWindowsAbove) as? Bool ?? true
         hiddenTrayIcons = Set((defaults.stringArray(forKey: Store.Key.hiddenTrayIcons) ?? []).compactMap(TrayIcon.init))
+        snapShortcuts = defaults.object(forKey: Store.Key.snapShortcuts) as? Bool ?? true
         startHotkey = defaults.data(forKey: Store.Key.startHotkey)
             .flatMap { try? JSONDecoder().decode(KeyCombo.self, from: $0) } ?? .startDefault
     }

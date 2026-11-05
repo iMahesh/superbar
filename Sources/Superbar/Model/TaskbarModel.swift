@@ -364,6 +364,9 @@ final class TaskbarModel {
         menu.addItem(ActionItem(app.isRunning ? "Open New Window" : "Open \(app.name)") { [weak self] in
             if app.isRunning { self?.newWindow(id) } else { self?.launch(app) }
         })
+        if let pid = app.pid, !app.windows.isEmpty {
+            menu.addItem(snapItem(pid: pid, windows: app.windows))
+        }
         if app.id != PinList.finderID {
             menu.addItem(app.isPinned
                 ? ActionItem("Unpin from Superbar") { [weak self] in self?.unpin(id) }
@@ -381,6 +384,25 @@ final class TaskbarModel {
             menu.addItem(ActionItem("Quit") { [weak self] in _ = self?.runningApp(pid)?.terminate() })
         }
         return menu
+    }
+
+    /// "Snap Window": fill, halves, quarters, thirds, each with its ⌃⌥ shortcut shown.
+    func snapItem(pid: pid_t, windows: [AppWindow]) -> NSMenuItem {
+        let item = NSMenuItem(title: "Snap Window", action: nil, keyEquivalent: "")
+        let sub = NSMenu()
+        let groups: [[Snap]] = [[.fill], [.leftHalf, .rightHalf, .topHalf, .bottomHalf],
+                                [.topLeft, .topRight, .bottomLeft, .bottomRight], [.leftThird, .centerThird, .rightThird]]
+        for (i, group) in groups.enumerated() {
+            if i > 0 { sub.addItem(.separator()) }
+            for snap in group {
+                let entry = ActionItem("\(snap.title)    \(snap.shortcut.display)") {
+                    WindowSnapper.shared.snap(snap, pid: pid, windows: windows)
+                }
+                sub.addItem(entry)
+            }
+        }
+        item.submenu = sub
+        return item
     }
 
     func barMenu() -> NSMenu {

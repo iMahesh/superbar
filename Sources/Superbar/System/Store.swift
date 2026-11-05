@@ -24,6 +24,7 @@ enum Store {
         static let startHotkey = "startHotkey"
         static let hiddenTrayIcons = "hiddenTrayIcons"
         static let barVisibility = "barVisibility"
+        static let snapShortcuts = "snapShortcuts"
         static let autoHideDelay = "autoHideDelay"
     }
 }

@@ -182,6 +182,27 @@ struct GeneralSettings: View {
                 Text("The icons left of the clock. The clock always shows. Battery appears only on a Mac with a battery.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section {
+                Toggle("Snap shortcuts", isOn: $settings.snapShortcuts)
+                if settings.snapShortcuts {
+                    ForEach(Snap.allCases) { snap in
+                        LabeledContent(snap.title) {
+                            HStack(spacing: Space.xs) {
+                                if hotkeys.snapFailures.contains(snap) {
+                                    Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
+                                        .help("Another app uses this shortcut")
+                                }
+                                Text(snap.shortcut.display).monospaced()
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Window snapping")
+            } footer: {
+                Text("Snaps the front window. Right-click an app's button for the same choices under Snap Window. Snapped windows stay above Superbar while it's set to Always show. Needs Accessibility.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Start menu") {
                 LabeledContent("Shortcut") {
                     ShortcutRecorder(combo: $settings.startHotkey)

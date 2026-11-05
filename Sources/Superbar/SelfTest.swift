@@ -199,6 +199,25 @@ enum SelfTest {
                 presenter.detectionEnabled = true
             }
 
+            // S-027: snapping keeps windows above the bar while it keeps its space.
+            if let main = NSScreen.screens.first, let area = WindowSnapper.shared.screens().first?.area {
+                let barTop = main.cgFrame.maxY - app.settings.metrics.height
+                check("snap area ends at the top of the bar", area.maxY <= barTop + 0.5, "area \(area) bar top \(barTop)")
+                check("snap halves and thirds stay inside it",
+                      Snap.allCases.allSatisfy { area.contains($0.frame(in: area)) })
+                app.settings.barVisibility = .autoHide
+                let free = WindowSnapper.shared.screens().first?.area ?? .zero
+                check("with auto-hide, snapping uses the space under the bar", free.maxY > barTop, "\(free)")
+                app.settings.barVisibility = .alwaysShow
+            }
+            do {
+                let item = app.model.snapItem(pid: 1, windows: [])
+                let titles = item.submenu?.items.filter { !$0.isSeparatorItem }.map(\.title) ?? []
+                check("an app's menu offers all 12 snaps", item.title == "Snap Window" && titles.count == 12
+                      && titles.first?.hasPrefix("Fill Screen") == true, "\(titles)")
+            }
+            print("INFO snap shortcuts taken by other apps: \(HotkeyCenter.shared.snapFailures.map(\.rawValue))")
+
             // Tray: each icon is its own clickable view, and each opens its popover.
             if let content = app.bar.contentView {
                 @MainActor func catchers(_ v: NSView) -> [NSView] { (v is MouseCatcher.CatcherView ? [v] : []) + v.subviews.flatMap(catchers) }

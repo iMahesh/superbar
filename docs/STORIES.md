@@ -246,6 +246,17 @@ Acceptance:
 - [manual] Always hide: ⌃⎋ brings the bar up with Start. Not tried by hand: a key sent from a script doesn't reach the shortcut.
 Status: built
 
+### S-027 Snap windows
+As the user, I fill the screen with a window or snap it to a half, a quarter, or a third, and the bar never covers it.
+Depends: S-019, S-026
+Acceptance:
+- [unit] Snap frames tile the free area with no gap, thirds are equal, nothing reaches under the bar; SnapArea takes the taller of the Dock and the bar; the twelve shortcuts are distinct.
+- [self-test] The snap area ends at the top of the bar and every snap stays inside it; with auto-hide it uses the space under the bar; an app's menu offers all twelve snaps.
+- [manual] Each ⌃⌥ shortcut on a TextEdit window. Verified 2026-11-04 on a 1440 × 900 screen: fill 0,31 1440 × 829; halves 720 wide or 415/414 tall; quarters 720 × 415/414; thirds 480 wide; every bottom edge at 860, the top of the bar.
+- [manual] Snap Window > Right Third from TextEdit's button, with Finder in front. Verified 2026-11-04: snapped to 960,31 480 × 829 and came to the front.
+- [manual] A window with a large minimum size stays inside the free area. Not tried.
+Status: built
+
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek
