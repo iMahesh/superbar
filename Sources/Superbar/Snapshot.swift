@@ -90,8 +90,23 @@ enum Snapshot {
                 if wanted("settings") {
                     for tab in SettingsTab.allCases {
                         app.settingsWindow.show(tab: tab)
+                        scrollToTop(app.settingsWindow.settingsWindow)
                         await shot("settings-\(tab.rawValue)", app.settingsWindow.settingsWindow)
+                        // The rest of a long tab, a window height at a time: settings-general-2, -3, ...
+                        if let scroll = scrollView(in: app.settingsWindow.settingsWindow?.contentView) {
+                            var page = 2
+                            while scrollDown(scroll) {
+                                await shot("settings-\(tab.rawValue)-\(page)", app.settingsWindow.settingsWindow)
+                                page += 1
+                            }
+                        }
                     }
+                    // Auto-hide shows its delay row.
+                    app.settings.barVisibility = .autoHide
+                    app.settingsWindow.show(tab: .general)
+                    scrollToTop(app.settingsWindow.settingsWindow)
+                    await shot("settings-autohide", app.settingsWindow.settingsWindow)
+                    app.settings.barVisibility = .alwaysShow
                     app.settingsWindow.settingsWindow?.close()
                 }
             }
@@ -133,6 +148,37 @@ enum Snapshot {
                                wifiName: "Home")
         for id in ["com.apple.TextEdit", "com.apple.Preview", "com.apple.calculator"] { app.model.noteRecent(id) }
         app.appIndex.start()
+    }
+
+    /// The tallest scroll view in a window: the Settings form.
+    private static func scrollView(in view: NSView?) -> NSScrollView? {
+        guard let view else { return nil }
+        var found: [NSScrollView] = []
+        func walk(_ v: NSView) {
+            if let s = v as? NSScrollView { found.append(s) }
+            v.subviews.forEach(walk)
+        }
+        walk(view)
+        return found.max { $0.frame.height < $1.frame.height }
+    }
+
+    private static func scrollToTop(_ window: NSWindow?) {
+        guard let scroll = scrollView(in: window?.contentView) else { return }
+        scroll.contentView.scroll(to: .zero)
+        scroll.reflectScrolledClipView(scroll.contentView)
+    }
+
+    /// Scrolls down by most of a page (keeping a little overlap). False at the bottom.
+    private static func scrollDown(_ scroll: NSScrollView) -> Bool {
+        let clip = scroll.contentView
+        guard let doc = scroll.documentView else { return false }
+        let maxY = max(doc.frame.height - clip.bounds.height, 0)
+        let y = clip.bounds.origin.y
+        let next = min(y + clip.bounds.height - 60, maxY)
+        guard next > y + 1 else { return false }
+        clip.scroll(to: NSPoint(x: clip.bounds.origin.x, y: next))
+        scroll.reflectScrolledClipView(clip)
+        return true
     }
 
     private static func buttonRect(_ app: AppDelegate, index: Int) -> NSRect {

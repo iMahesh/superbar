@@ -323,7 +323,8 @@ private struct RightColumn: View {
     private var places: [Place] {
         let home = FileManager.default.homeDirectoryForCurrentUser
         return [
-            Place(name: NSUserName(), symbol: "house", url: home),
+            // Snapshots show "Home" so a screenshot never carries the user's name.
+            Place(name: Snapshot.directory == nil ? NSUserName() : "Home", symbol: "house", url: home),
             Place(name: "Documents", symbol: "doc", url: home.appending(path: "Documents")),
             Place(name: "Downloads", symbol: "arrow.down.circle", url: home.appending(path: "Downloads")),
             Place(name: "Pictures", symbol: "photo", url: home.appending(path: "Pictures")),
@@ -337,7 +338,7 @@ private struct RightColumn: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             ForEach(places) { place in
                 PlaceRow(name: place.name, symbol: place.symbol) { model.open(place: place.url) }
-                if place.name == NSUserName() || place.name == "Music" {
+                if place.symbol == "house" || place.name == "Music" {
                     Divider().padding(.vertical, Space.xs)
                 }
             }

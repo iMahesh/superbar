@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Superbar — a glass taskbar for macOS</title>
-  <meta name="description" content="Superbar puts a glass taskbar along the bottom of every Mac display: a Start menu with search, one button per app, window previews, a tray, and a clock.">
+  <meta name="description" content="Superbar puts a glass bar along the bottom of every Mac display: a Start menu with search, one button per app, window previews, snapping, auto-hide, a tray, and a clock.">
   <meta property="og:title" content="Superbar — a glass taskbar for macOS">
-  <meta property="og:description" content="A Start menu, one button per app, window previews, and a tray. On every display.">
+  <meta property="og:description" content="A Start menu, one button per app, window previews, window snapping, and a tray. On every display.">
   <meta property="og:image" content="assets/img/icon-512.png">
   <meta name="color-scheme" content="dark light">
   <link rel="icon" href="assets/img/favicon-64.png" type="image/png">
@@ -23,9 +23,8 @@
         <span>Superbar</span>
       </a>
       <nav aria-label="Sections">
-        <a href="#demo">Live demo</a>
         <a href="#features">Features</a>
-        <a href="#screens">Screenshots</a>
+        <a href="#snapping">Snapping</a>
         <a href="#permissions">Permissions</a>
         <a class="nav-cta" href="#install">Install</a>
       </nav>
@@ -33,288 +32,217 @@
   </header>
 
   <main id="main">
-    <!-- Hero -->
     <section class="hero" id="top">
       <div class="wrap hero-inner">
         <img class="hero-icon" src="assets/img/icon-512.png" alt="Superbar app icon: a glowing blue orb above a small bar" width="128" height="128">
         <p class="eyebrow">For macOS 26 · Every display</p>
-        <h1>The taskbar your Mac<br>never had.</h1>
-        <p class="lede">Superbar puts a glass bar along the bottom of every display: a Start menu that searches as you type, one button per app with live window previews, a tray, and a clock. If you came to the Mac from a PC, it will feel like home.</p>
+        <h1>The taskbar your Mac <br>never had.</h1>
+        <p class="lede">Superbar puts a glass bar along the bottom of every display: a Start menu that searches as you type, one button per app with window previews, snapping, a tray, and a clock. If you came to the Mac from a PC, it will feel like home.</p>
         <div class="hero-ctas">
-          <a class="btn btn-primary" href="#demo">Try it in your browser</a>
-          <a class="btn btn-ghost" href="#install">Build from source</a>
+          <a class="btn btn-primary" href="#install">Build from source</a>
+          <a class="btn btn-ghost" href="#features">See the features</a>
           <a class="btn btn-ghost" id="repo-link" href="#" hidden>View on GitHub</a>
         </div>
       </div>
+      <figure class="hero-shot">
+        <picture><source srcset="assets/img/bar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-dark.png" alt="The Superbar bar: Start orb, Mission Control, buttons for Finder, Safari, Mail, Notes, Music, and Terminal, then Trash, Wi-Fi, sound, battery, and the clock" width="2880" height="80"></picture>
+        <figcaption>The real bar. Every picture on this page is a screenshot of Superbar running on a Mac.</figcaption>
+      </figure>
     </section>
 
-    <!-- Playground -->
-    <section class="section" id="demo" aria-labelledby="demo-title">
-      <div class="wrap">
-        <div class="section-head">
-          <p class="eyebrow">Live demo</p>
-          <h2 id="demo-title">Go ahead, click around.</h2>
-          <p>This is a working model of Superbar, running on the same rules as the app. Click the orb, an app, the clock, or the tray. Right-click a button. Hover one to see its windows.</p>
-        </div>
-
-        <div class="hints" aria-label="Things to try">
-          <button class="hint" data-try="start">Open Start and type “ter”</button>
-          <button class="hint" data-try="pick">Click Browser twice to pick a window</button>
-          <button class="hint" data-try="minimize">Click the active app to minimize it</button>
-          <button class="hint" data-try="calendar">Open the calendar</button>
-          <button class="hint" data-try="close">Close Terminal’s last window</button>
-        </div>
-
-        <div class="stage-frame">
-          <div class="stage-scaler" id="stage-scaler">
-            <div class="stage" id="stage" aria-label="Superbar demo desktop">
-              <div class="desktop" id="desktop"></div>
-              <div class="toast" id="toast" role="status" aria-live="polite"></div>
-              <div class="bar" id="bar" role="toolbar" aria-label="Superbar"></div>
-              <div class="layer" id="layer"></div>
-            </div>
-          </div>
-        </div>
-        <p class="stage-note">Best on a larger screen. Apps and windows here are pretend; nothing leaves your browser.</p>
-        <p class="stage-note keyboard-note">Keyboard: <kbd>Esc</kbd> closes menus. In Start, type to search and press <kbd>Return</kbd> to open the top hit.</p>
-      </div>
-    </section>
-
-    <!-- Features -->
     <section class="section" id="features" aria-labelledby="features-title">
       <div class="wrap">
         <div class="section-head">
           <p class="eyebrow">Features</p>
           <h2 id="features-title">Everything a taskbar should do.</h2>
-          <p>Each one below has a small demo of exactly how it behaves.</p>
+          <p>Screenshots come from Superbar’s snapshot mode, with sample apps and windows. They follow your light or dark setting.</p>
         </div>
 
-        <!-- Click rules -->
-        <article class="feature" id="f-click">
+        <article class="feature" id="f-start">
+          <div class="feature-copy">
+            <h3>Start, searched</h3>
+            <p>Click the orb or press <kbd>⌃</kbd><kbd>⎋</kbd> and start typing. Your pinned apps and recent ones are listed first, with your folders, System Settings, and the power buttons on the right.</p>
+            <ul class="facts">
+              <li>Names that <strong>start with</strong> what you typed come first, then <strong>word starts</strong> (“time” finds FaceTime), then anything that contains it.</li>
+              <li><strong>Return</strong> opens the top hit. <strong>Esc</strong> or a click outside closes Start.</li>
+              <li>Change the shortcut in Settings.</li>
+            </ul>
+          </div>
+          <figure class="feature-shot">
+            <div class="duo">
+              <picture><source srcset="assets/img/start-menu-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/start-menu-dark.png" alt="The Start menu: pinned and recent apps on the left, folders and System Settings on the right, a search field and Shut Down at the bottom" loading="lazy" width="920" height="1080"></picture>
+              <picture><source srcset="assets/img/start-search-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/start-search-dark.png" alt="The Start menu searching for “saf”, with Safari as the top hit" loading="lazy" width="920" height="1080"></picture>
+            </div>
+            <figcaption>Start, then a search for “saf”.</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature flip" id="f-click">
           <div class="feature-copy">
             <h3>One click does the right thing</h3>
-            <p>Superbar decides what a click means from the app’s state at the moment you press: launch it, bring it forward, restore a minimized window, minimize the window you’re looking at, or show its windows so you can pick one.</p>
+            <p>Superbar decides what a click means from the app’s state at the moment you press. Each app gets one button; the glow takes the color of its icon.</p>
+            <table class="rules">
+              <tbody>
+                <tr><td>Not running</td><td>Opens it</td></tr>
+                <tr><td>Running behind other apps</td><td>Brings its window forward</td></tr>
+                <tr><td>In front, one window</td><td>Minimizes it</td></tr>
+                <tr><td>In front, two or more windows</td><td>Lists them so you pick one</td></tr>
+                <tr><td>Only minimized windows</td><td>Restores the latest</td></tr>
+                <tr><td>Hidden with ⌘H</td><td>Unhides it</td></tr>
+              </tbody>
+            </table>
             <ul class="facts">
               <li><strong>Shift-click</strong> or middle-click opens a new window.</li>
-              <li><strong>Right-click</strong> lists the app’s windows, plus Pin, Close, and Quit.</li>
+              <li><strong>Right-click</strong> lists the app’s windows, plus Snap Window, Pin, Close, and Quit.</li>
               <li><strong>Drag</strong> a button to reorder your pins.</li>
             </ul>
           </div>
-          <div class="demo-card" id="click-demo">
-            <div class="demo-title">Try the rules</div>
-            <div class="controls">
-              <label class="switch"><input type="checkbox" data-k="running" checked><span></span>Running</label>
-              <label class="switch"><input type="checkbox" data-k="active"><span></span>In front</label>
-              <label class="switch"><input type="checkbox" data-k="hidden"><span></span>Hidden (⌘H)</label>
-              <div class="stepper"><span>Open windows</span><button data-k="visible" data-d="-1" aria-label="Fewer open windows">−</button><output data-o="visible">1</output><button data-k="visible" data-d="1" aria-label="More open windows">+</button></div>
-              <div class="stepper"><span>Minimized</span><button data-k="minimized" data-d="-1" aria-label="Fewer minimized windows">−</button><output data-o="minimized">0</output><button data-k="minimized" data-d="1" aria-label="More minimized windows">+</button></div>
+          <figure class="feature-shot bar">
+            <div class="stack">
+              <picture><source srcset="assets/img/bar-hover-safari-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-hover-safari-dark.png" alt="Superbar with the pointer over Safari, which glows blue" loading="lazy" width="900" height="80"></picture>
+              <picture><source srcset="assets/img/bar-hover-notes-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-hover-notes-dark.png" alt="Superbar with the pointer over Notes, which glows yellow" loading="lazy" width="900" height="80"></picture>
             </div>
-            <div class="result" aria-live="polite">
-              <div class="result-label">A click will</div>
-              <div class="result-action" id="click-action">Bring its window to the front</div>
-              <div class="result-why" id="click-why"></div>
-            </div>
-          </div>
+            <figcaption>Hovering Safari, then Notes. Each glow takes its icon’s color.</figcaption>
+          </figure>
         </article>
 
-        <!-- Visibility -->
-        <article class="feature flip" id="f-visibility">
+        <article class="feature" id="f-visibility">
           <div class="feature-copy">
             <h3>Only the apps you’re using</h3>
             <p>Pinned apps always keep their button, even when they’re closed. Every other app gets a button only while it has a window open: an ordinary one, a minimized one, or one in full screen on another Space. Close its last window and the button goes.</p>
-            <p class="muted">A running app with no windows, like Finder with only the desktop, looks like a plain pin instead of a lit button.</p>
+            <p class="muted">An app with live windows gets a frame around its button. Notes and Music above are pinned but closed, so they show as plain icons. Terminal isn’t pinned; it has a button because a window is open.</p>
           </div>
-          <div class="demo-card" id="vis-demo">
-            <div class="demo-title">Terminal isn’t pinned. Notes is.</div>
-            <div class="mini-bar" id="vis-bar" aria-live="polite"></div>
-            <div class="button-row">
-              <button class="chip" data-v="open">Open a window</button>
-              <button class="chip" data-v="minimize">Minimize one</button>
-              <button class="chip" data-v="fullscreen">Full screen one</button>
-              <button class="chip" data-v="close">Close one</button>
-              <button class="chip" data-v="pin">Pin Terminal</button>
-              <button class="chip" data-v="notes">Quit Notes</button>
-            </div>
-            <div class="readout" id="vis-readout"></div>
-          </div>
+          <figure class="feature-shot bar">
+            <picture><source srcset="assets/img/bar-apps-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-apps-dark.png" alt="Superbar with Finder, Safari, and Mail framed, Notes and Music as plain pins, and Terminal framed" loading="lazy" width="900" height="80"></picture>
+            <figcaption>Framed buttons have windows; plain ones are pins.</figcaption>
+          </figure>
         </article>
 
-        <!-- Full screen -->
-        <article class="feature" id="f-fullscreen">
+        <article class="feature flip" id="f-preview">
           <div class="feature-copy">
-            <h3>Out of the way in full screen</h3>
-            <p>When an app goes full screen, that display’s bar slides away. Rest the pointer on the bottom edge for a moment and it slides back up over the app, the way the Dock does. It stays while a menu or popover is open, then tucks away again.</p>
+            <h3>Window previews</h3>
+            <p>Rest the pointer on a button and its windows appear as thumbnails, minimized ones marked. Click one to jump to it, or close it right there.</p>
+            <p class="muted">Thumbnails need Screen Recording. Without it, previews show the app icon, as in this screenshot.</p>
+          </div>
+          <figure class="feature-shot">
+            <picture><source srcset="assets/img/preview-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/preview-dark.png" alt="A preview popover for Safari with two windows, one marked Minimized" loading="lazy" width="864" height="352"></picture>
+            <figcaption>Safari’s two windows, one minimized.</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature" id="f-autohide">
+          <div class="feature-copy">
+            <span class="badge">New</span>
+            <h3>Show it, auto-hide it, or keep it hidden</h3>
+            <p>Choose how the bar behaves in Settings:</p>
             <ul class="facts">
-              <li>Reveals after <strong>0.2 s</strong> on the bottom edge.</li>
-              <li>Hides <strong>0.6 s</strong> after the pointer leaves.</li>
-              <li>Each display decides on its own.</li>
+              <li><strong>Always show</strong> keeps it up and keeps windows clear of it.</li>
+              <li><strong>Auto-hide</strong> tucks it away and brings it back when you rest the pointer on the bottom edge. It stays up for the delay you set, from 0 to 10 seconds, after you move away.</li>
+              <li><strong>Always hide</strong> keeps it out of sight until you open Start with <kbd>⌃</kbd><kbd>⎋</kbd>; it goes again when Start closes.</li>
             </ul>
+            <p class="muted">In every mode the bar slides away over full-screen apps and comes back from the bottom edge, one display at a time.</p>
           </div>
-          <div class="demo-card" id="fs-demo">
-            <div class="demo-title">Hover the bottom edge of the screen</div>
-            <div class="mini-screen" id="fs-screen">
-              <div class="mini-app" id="fs-app"><span>A full-screen app</span></div>
-              <div class="edge-zone" id="fs-edge" aria-hidden="true"></div>
-              <div class="mini-strip" id="fs-bar"></div>
-            </div>
-            <div class="button-row">
-              <button class="chip" id="fs-toggle" aria-pressed="false">Enter full screen</button>
-            </div>
-            <div class="readout" id="fs-readout">The bar is showing.</div>
-          </div>
+          <figure class="feature-shot mid">
+            <picture><source srcset="assets/img/settings-autohide-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-autohide-dark.png" alt="Superbar Settings with Visibility set to Auto-hide and a Hide after stepper" loading="lazy" width="1040" height="1284"></picture>
+            <figcaption>Auto-hide with its hide delay.</figcaption>
+          </figure>
         </article>
 
-        <!-- Keep windows above -->
-        <article class="feature flip" id="f-fit">
+        <article class="feature flip" id="snapping">
           <div class="feature-copy">
-            <h3>Nothing hides behind the bar</h3>
-            <p>macOS has no way for an app to reserve the bottom of the screen, so Superbar keeps windows clear of it. A window that reaches under the bar moves up if there’s room, or keeps its top and has its bottom trimmed, so a spreadsheet’s sheet tabs stay in view.</p>
-            <p class="muted">Dragging a window down is never fought: Superbar reacts only when a window opens or resizes, not when you move it.</p>
+            <span class="badge">New</span>
+            <h3>Snap windows into place</h3>
+            <p>Fill the screen with the front window, or snap it to a half, a quarter, or a third. Snapped windows stop at the top of the bar, so nothing ends up underneath it. The same choices are under <em>Snap Window</em> when you right-click an app’s button.</p>
+            <table class="keys">
+              <thead><tr><th>Snap to</th><th>Shortcut</th></tr></thead>
+              <tbody>
+                <tr><td>Fill the screen</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>↩</kbd></td></tr>
+                <tr><td>Left, right, top, or bottom half</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td></tr>
+                <tr><td>Quarters, laid out like the screen</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>U</kbd> <kbd>I</kbd> <kbd>J</kbd> <kbd>K</kbd></td></tr>
+                <tr><td>Left, center, or right third</td><td><kbd>⌃</kbd><kbd>⌥</kbd><kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd></td></tr>
+              </tbody>
+            </table>
+            <p class="muted" style="margin-top:14px">Turn the shortcuts off in Settings if another app uses them; Superbar marks any shortcut it couldn’t claim.</p>
           </div>
-          <div class="demo-card" id="fit-demo">
-            <div class="demo-title">Watch the window</div>
-            <div class="mini-screen tall" id="fit-screen">
-              <div class="mini-menubar"></div>
-              <div class="mini-window" id="fit-window"><div class="mw-title">Budget.xlsx</div><div class="mw-body"><div class="mw-tabs"><span>Sheet1</span><span>Sheet2</span><span>Totals</span></div></div></div>
-              <div class="mini-strip" id="fit-bar"></div>
-            </div>
-            <div class="button-row">
-              <button class="chip" data-fit="low">Open a low window</button>
-              <button class="chip" data-fit="zoom">Zoom it</button>
-              <button class="chip" data-fit="drag">Drag it down</button>
-              <label class="switch small"><input type="checkbox" id="fit-on" checked><span></span>Keep windows above</label>
-            </div>
-            <div class="readout" id="fit-readout"></div>
-          </div>
+          <figure class="feature-shot mid">
+            <picture><source srcset="assets/img/settings-snap-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-snap-dark.png" alt="The Window snapping section of Superbar Settings, listing snaps with their shortcuts" loading="lazy" width="1040" height="900"></picture>
+            <figcaption>The Window snapping section of Settings.</figcaption>
+          </figure>
         </article>
 
-        <!-- Every display -->
-        <article class="feature" id="f-displays">
+        <article class="feature" id="f-dock">
           <div class="feature-copy">
-            <h3>A bar on every display</h3>
-            <p>Plug in a monitor and it gets its own bar, with the same apps and the same window counts. Hovering stays on the bar under your pointer. Start and the calendar open on the display you’re using, and previews open above the button you touched.</p>
+            <span class="badge">New</span>
+            <h3>Windows stay clear, and the Dock stays out of the way</h3>
+            <p>macOS has no way for an app to reserve the bottom of the screen, so Superbar keeps windows clear of the bar. A window that reaches under it moves up if there’s room, or keeps its top and has its bottom trimmed. Dragging a window down is never fought.</p>
+            <p>Hide the macOS Dock and Superbar keeps it at the bottom with small icons, so minimized windows shrink toward the bar and Mission Control shows the bar, not the Dock. <em>Restore Dock</em> puts back every Dock setting exactly as it was.</p>
           </div>
-          <div class="demo-card" id="disp-demo">
-            <div class="demo-title">Two displays, one list</div>
-            <div class="monitors">
-              <div class="monitor" data-m="0"><div class="monitor-screen"><div class="mini-strip"></div></div><div class="monitor-label">Built-in</div></div>
-              <div class="monitor big" data-m="1"><div class="monitor-screen"><div class="mini-strip"></div></div><div class="monitor-label">External</div></div>
-            </div>
-            <div class="button-row">
-              <button class="chip" id="disp-fs" aria-pressed="false">Full screen on External</button>
-              <button class="chip" id="disp-plug">Unplug External</button>
-              <button class="chip" id="disp-open">Open a Mail window</button>
-            </div>
-          </div>
+          <figure class="feature-shot mid">
+            <picture><source srcset="assets/img/settings-general-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-general-dark.png" alt="Superbar Settings, General tab: size, visibility, keep windows above Superbar, and hide the macOS Dock" loading="lazy" width="1040" height="1284"></picture>
+            <figcaption>Settings, General tab.</figcaption>
+          </figure>
         </article>
 
-        <!-- Feature grid -->
+        <article class="feature flip" id="f-tray">
+          <div class="feature-copy">
+            <h3>A tray that works</h3>
+            <p>Turn Wi-Fi on or off, set the volume or mute, and check the battery and time left, each from a small popover. Hide any of them in Settings. Battery appears only on a Mac with a battery.</p>
+          </div>
+          <figure class="feature-shot">
+            <picture><source srcset="assets/img/bar-tray-light.png" media="(prefers-color-scheme: light)"><img class="tray-strip" src="assets/img/bar-tray-dark.png" alt="The right end of Superbar: Trash, Wi-Fi, sound, battery, and the clock" loading="lazy" width="440" height="80"></picture>
+            <div class="duo" style="margin-top:16px">
+              <picture><source srcset="assets/img/tray-sound-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-sound-dark.png" alt="The Sound popover with a mute button and a volume slider" loading="lazy" width="560" height="248"></picture>
+              <picture><source srcset="assets/img/tray-network-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-network-dark.png" alt="The Wi-Fi popover with an on/off switch" loading="lazy" width="560" height="272"></picture>
+            </div>
+            <div class="duo" style="margin-top:16px">
+              <picture><source srcset="assets/img/tray-battery-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-battery-dark.png" alt="The Battery popover with charge and time left" loading="lazy" width="560" height="272"></picture>
+            </div>
+            <figcaption>The tray, then the Sound, Wi-Fi, and Battery popovers.</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature" id="f-calendar">
+          <div class="feature-copy">
+            <h3>Clock and calendar</h3>
+            <p>Click the clock for a month calendar. Type or step to any date, click a day to pick it, and press Today to come back. The clock follows your Mac’s 12 or 24 hour setting.</p>
+          </div>
+          <figure class="feature-shot narrow">
+            <picture><source srcset="assets/img/calendar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/calendar-dark.png" alt="The calendar popover with a date field, a Today button, and the month grid" loading="lazy" width="528" height="640"></picture>
+            <figcaption>The calendar.</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature flip" id="f-size">
+          <div class="feature-copy">
+            <h3>Normal or small</h3>
+            <p>A 40 pt bar, or a slimmer one with smaller icons. Changes apply at once.</p>
+          </div>
+          <figure class="feature-shot bar">
+            <picture><source srcset="assets/img/bar-small-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-small-dark.png" alt="Superbar at its small size" loading="lazy" width="900" height="60"></picture>
+            <figcaption>The small bar.</figcaption>
+          </figure>
+        </article>
+
         <div class="grid">
           <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-search"/></svg></div>
-            <h3>Start, searched</h3>
-            <p>Press the orb or <kbd>⌃</kbd><kbd>⎋</kbd> and type. Names that start with what you typed come first, then word starts (“time” finds FaceTime), then anything that contains it. Return opens the top hit.</p>
-            <button class="link-btn" data-try="start">Try it above →</button>
-          </div>
-          <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-preview"/></svg></div>
-            <h3>Window previews</h3>
-            <p>Rest on a button and its windows appear as thumbnails, minimized ones marked. Click one to jump to it, or close it right there.</p>
-            <button class="link-btn" data-try="hover">Try it above →</button>
-          </div>
-          <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-wifi"/></svg></div>
-            <h3>A tray that works</h3>
-            <p>Turn Wi-Fi on or off, set the volume or mute, and check the battery and time left, each from a small popover. Hide any of them in Settings.</p>
-            <button class="link-btn" data-try="sound">Try it above →</button>
-          </div>
-          <div class="tile">
-            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-calendar"/></svg></div>
-            <h3>Clock and calendar</h3>
-            <p>Click the clock for a month calendar. Type or step to any date, click a day to pick it, and press Today to come back.</p>
-            <button class="link-btn" data-try="calendar">Try it above →</button>
+            <div class="tile-icon" aria-hidden="true"><svg><use href="#i-display"/></svg></div>
+            <h3>A bar on every display</h3>
+            <p>Plug in a monitor and it gets its own bar, with the same apps and window counts. Start and the calendar open on the display you’re using.</p>
           </div>
           <div class="tile">
             <div class="tile-icon" aria-hidden="true"><svg><use href="#i-trash"/></svg></div>
             <h3>Trash, without the Dock</h3>
             <p>A trash icon beside the tray opens Finder’s Trash, with Empty and Put Back. Hide the Dock and you lose nothing.</p>
-            <button class="link-btn" data-try="trash">Try it above →</button>
           </div>
           <div class="tile">
             <div class="tile-icon" aria-hidden="true"><svg><use href="#i-mc"/></svg></div>
             <h3>Mission Control and desktop</h3>
-            <p>A button right after the orb opens Mission Control. The thin strip at the far right shows the desktop, and a second click brings your windows back.</p>
-            <button class="link-btn" data-try="mc">Try it above →</button>
+            <p>A button right after the orb opens Mission Control. The thin strip at the far right shows the desktop; a second click brings your windows back.</p>
           </div>
-        </div>
-
-        <!-- Settings -->
-        <article class="feature flip" id="f-settings">
-          <div class="feature-copy">
-            <h3>Make it yours</h3>
-            <p>Pick a normal or small bar, choose which tray icons show, set the Start shortcut, hide the macOS Dock (and restore it any time), and open Superbar at login. Changes apply at once.</p>
-            <p class="muted">These switches control the demo bar above.</p>
-          </div>
-          <div class="demo-card settings-card" id="settings-demo">
-            <div class="demo-title">Superbar Settings</div>
-            <div class="set-row"><span>Size</span>
-              <div class="segmented" role="radiogroup" aria-label="Bar size">
-                <button role="radio" aria-checked="false" data-size="small">Small</button>
-                <button role="radio" aria-checked="true" data-size="normal">Normal</button>
-              </div>
-            </div>
-            <div class="set-group">System tray</div>
-            <label class="set-row switch"><span class="grow">Trash</span><input type="checkbox" data-tray="trash" checked><span></span></label>
-            <label class="set-row switch"><span class="grow">Wi-Fi</span><input type="checkbox" data-tray="wifi" checked><span></span></label>
-            <label class="set-row switch"><span class="grow">Sound</span><input type="checkbox" data-tray="sound" checked><span></span></label>
-            <label class="set-row switch"><span class="grow">Battery</span><input type="checkbox" data-tray="battery" checked><span></span></label>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- Screenshots -->
-    <section class="section" id="screens" aria-labelledby="screens-title">
-      <div class="wrap">
-        <div class="section-head">
-          <p class="eyebrow">Screenshots</p>
-          <h2 id="screens-title">The real thing, on a Mac.</h2>
-          <p>Taken by Superbar’s own snapshot mode. They follow your light or dark setting.</p>
-        </div>
-        <figure class="shot wide">
-          <picture><source srcset="assets/img/bar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-dark.png" alt="The Superbar bar: Start orb, Mission Control, app buttons, then Trash, Wi-Fi, sound, battery, and the clock" loading="lazy" width="2880" height="80"></picture>
-          <figcaption>The bar, 40 pt tall, across the bottom of the screen.</figcaption>
-        </figure>
-        <div class="shots">
-          <figure class="shot">
-            <picture><source srcset="assets/img/preview-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/preview-dark.png" alt="A preview popover with two browser windows, one marked Minimized" loading="lazy" width="864" height="352"></picture>
-            <figcaption>Window previews</figcaption>
-          </figure>
-          <figure class="shot">
-            <picture><source srcset="assets/img/calendar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/calendar-dark.png" alt="The calendar popover with a date field, Today button, and month grid" loading="lazy" width="528" height="640"></picture>
-            <figcaption>Calendar</figcaption>
-          </figure>
-          <figure class="shot">
-            <picture><source srcset="assets/img/tray-sound-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-sound-dark.png" alt="The Sound popover with a mute button and volume slider" loading="lazy" width="560" height="248"></picture>
-            <figcaption>Sound</figcaption>
-          </figure>
-          <figure class="shot">
-            <picture><source srcset="assets/img/tray-network-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-network-dark.png" alt="The Wi-Fi popover with an on/off switch" loading="lazy" width="560" height="272"></picture>
-            <figcaption>Wi-Fi</figcaption>
-          </figure>
-          <figure class="shot">
-            <picture><source srcset="assets/img/tray-battery-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/tray-battery-dark.png" alt="The Battery popover with charge and time left" loading="lazy" width="560" height="272"></picture>
-            <figcaption>Battery</figcaption>
-          </figure>
-          <figure class="shot">
-            <picture><source srcset="assets/img/settings-general-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-general-dark.png" alt="Superbar Settings: size, keep windows above, hide the Dock, and system tray switches" loading="lazy" width="1040" height="1284"></picture>
-            <figcaption>Settings</figcaption>
-          </figure>
         </div>
       </div>
     </section>
 
-    <!-- Permissions -->
     <section class="section" id="permissions" aria-labelledby="perm-title">
       <div class="wrap">
         <div class="section-head">
@@ -322,24 +250,29 @@
           <h2 id="perm-title">What it asks for, and why.</h2>
           <p>Superbar asks for each permission on its own and keeps working without it. Settings shows each one as On or Off, with a button to grant it.</p>
         </div>
-        <div class="perms">
-          <div class="perm">
-            <h3>Accessibility</h3>
-            <p>Lists each app’s windows, and focuses, minimizes, closes, and moves them. Without it, buttons still switch apps, but there are no window counts, no picking a window, and no keeping windows above the bar.</p>
+        <article class="feature" id="f-perms">
+          <div class="perms" style="grid-template-columns:1fr">
+            <div class="perm">
+              <h3>Accessibility</h3>
+              <p>Lists each app’s windows, and focuses, minimizes, closes, moves, and snaps them. Without it, buttons still switch apps, but there are no window counts, no picking a window, no snapping, and no keeping windows above the bar.</p>
+            </div>
+            <div class="perm">
+              <h3>Screen Recording</h3>
+              <p>Draws the window thumbnails in previews and fills in some window titles. Without it, previews show the app icon instead.</p>
+            </div>
+            <div class="perm">
+              <h3>Automation</h3>
+              <p>Asks System Events to restart, shut down, or log out, so apps still offer to save your work. Asks Finder to open its Trash. Each is asked for the first time you use it.</p>
+            </div>
           </div>
-          <div class="perm">
-            <h3>Screen Recording</h3>
-            <p>Draws the window thumbnails in previews and fills in some window titles. Without it, previews show the app icon instead.</p>
-          </div>
-          <div class="perm">
-            <h3>Automation</h3>
-            <p>Asks System Events to restart, shut down, or log out, so apps still offer to save your work. Asks Finder to open its Trash. Each is asked for the first time you use it.</p>
-          </div>
-        </div>
+          <figure class="feature-shot mid">
+            <picture><source srcset="assets/img/settings-permissions-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/settings-permissions-dark.png" alt="Superbar Settings, Permissions tab, listing each permission with its state" loading="lazy" width="1040" height="556"></picture>
+            <figcaption>Settings, Permissions tab.</figcaption>
+          </figure>
+        </article>
       </div>
     </section>
 
-    <!-- Install -->
     <section class="section" id="install" aria-labelledby="install-title">
       <div class="wrap install">
         <div class="section-head">
@@ -374,54 +307,13 @@
     </div>
   </footer>
 
-  <!-- Icons: original drawings -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-      <radialGradient id="g-orb" cx="50%" cy="35%" r="65%">
-        <stop offset="0" stop-color="#9fd8ff"/><stop offset=".45" stop-color="#2f7fe0"/><stop offset="1" stop-color="#0b2d6b"/>
-      </radialGradient>
-      <linearGradient id="g-gloss" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    <symbol id="i-orb" viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="17" fill="url(#g-orb)" stroke="#0a2350" stroke-opacity=".6"/>
-      <ellipse cx="20" cy="12.5" rx="11" ry="6.5" fill="url(#g-gloss)"/>
-      <path d="M20 10.5 L22.2 17.8 L29.5 20 L22.2 22.2 L20 29.5 L17.8 22.2 L10.5 20 L17.8 17.8 Z" fill="#fff"/>
-    </symbol>
     <symbol id="i-mc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
       <rect x="3" y="5" width="7.5" height="6" rx="1.2"/><rect x="13.5" y="5" width="7.5" height="6" rx="1.2"/><rect x="3" y="14" width="7.5" height="6" rx="1.2"/><rect x="13.5" y="14" width="7.5" height="6" rx="1.2"/>
     </symbol>
-    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></symbol>
-    <symbol id="i-preview" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="8.5" height="7" rx="1.2"/><rect x="13" y="4" width="8.5" height="7" rx="1.2"/><path d="M6 18h12M9 21h6" stroke-linecap="round"/></symbol>
-    <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9 16.4a4 4 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1.1" fill="currentColor" stroke="none"/></symbol>
-    <symbol id="i-wifi-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9 16.4a4 4 0 0 1 6 0" opacity=".35"/><path d="M4 4l16 16"/></symbol>
-    <symbol id="i-sound" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
-    <symbol id="i-sound-low" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6"/></symbol>
-    <symbol id="i-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
-    <symbol id="i-battery" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="21" height="10" rx="2.5"/><path d="M25 10.5v3" stroke-linecap="round"/><rect x="4" y="9" width="13" height="6" rx="1" fill="currentColor" stroke="none"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l.9 13a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4l.9-13M10 10.5v6.5M14 10.5v6.5"/></symbol>
-    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
-    <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
-    <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
-    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5v8.5a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></symbol>
-    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/></symbol>
-    <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v8M8.5 12.5l3.5 3.5 3.5-3.5"/></symbol>
-    <symbol id="i-pic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M3.5 16l5-5 4 4 2.5-2.5 5.5 5"/><circle cx="16" cy="9" r="1.5"/></symbol>
-    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
-    <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2.2"/><circle cx="17" cy="16" r="2.2"/></symbol>
-
-    <!-- App icons for the pretend apps. Original artwork, not any real app's. -->
-    <symbol id="app-finder" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#3b8fe8"/><path d="M8 16a4 4 0 0 1 4-4h8l3 3.5h13a4 4 0 0 1 4 4V34a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" fill="#cfe7ff"/><path d="M8 21h32v13a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" fill="#fff"/></symbol>
-    <symbol id="app-browser" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#0f9d8a"/><circle cx="24" cy="24" r="13" fill="none" stroke="#fff" stroke-width="2.4"/><ellipse cx="24" cy="24" rx="6" ry="13" fill="none" stroke="#fff" stroke-width="2"/><path d="M11 24h26M13.5 17h21M13.5 31h21" stroke="#fff" stroke-width="2"/></symbol>
-    <symbol id="app-mail" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#e8654a"/><rect x="10" y="14" width="28" height="20" rx="3" fill="#fff"/><path d="M11 16l13 10 13-10" fill="none" stroke="#e8654a" stroke-width="2.4" stroke-linejoin="round"/></symbol>
-    <symbol id="app-notes" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#f5c542"/><rect x="11" y="10" width="26" height="28" rx="3" fill="#fffbea"/><path d="M15 18h18M15 24h18M15 30h12" stroke="#c9a227" stroke-width="2" stroke-linecap="round"/></symbol>
-    <symbol id="app-music" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#8e5cf0"/><path d="M20 32V15l14-3v17" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><circle cx="17" cy="32" r="4" fill="#fff"/><circle cx="31" cy="29" r="4" fill="#fff"/></symbol>
-    <symbol id="app-terminal" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#22262e"/><path d="M13 18l7 6-7 6" fill="none" stroke="#7ee787" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 31h11" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></symbol>
-    <symbol id="app-photos" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#f3f4f6"/><circle cx="24" cy="17" r="6" fill="#f59e0b"/><circle cx="17" cy="28" r="6" fill="#ef4444" opacity=".85"/><circle cx="31" cy="28" r="6" fill="#3b82f6" opacity=".85"/></symbol>
-    <symbol id="app-calc" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#4b5563"/><rect x="12" y="10" width="24" height="9" rx="2" fill="#d1fae5"/><g fill="#fff"><circle cx="16" cy="26" r="2.4"/><circle cx="24" cy="26" r="2.4"/><circle cx="32" cy="26" r="2.4" fill="#fb923c"/><circle cx="16" cy="34" r="2.4"/><circle cx="24" cy="34" r="2.4"/><circle cx="32" cy="34" r="2.4" fill="#fb923c"/></g></symbol>
-    <symbol id="app-maps" viewBox="0 0 48 48"><rect x="3" y="3" width="42" height="42" rx="11" fill="#86efac"/><path d="M3 30l14-8 14 9 14-8v11a11 11 0 0 1-11 11H14A11 11 0 0 1 3 34z" fill="#60a5fa"/><path d="M24 11a7 7 0 0 1 7 7c0 5-7 12-7 12s-7-7-7-12a7 7 0 0 1 7-7z" fill="#ef4444"/><circle cx="24" cy="18" r="2.5" fill="#fff"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9 16.4a4 4 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1.1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-display" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12.5" rx="1.8"/><path d="M9 20.5h6M12 16.5v4"/></symbol>
   </svg>
 
   <script src="assets/app.js" defer></script>

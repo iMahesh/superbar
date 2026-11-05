@@ -16,7 +16,7 @@ behaviors, and gotchas `docs/SPEC.md`. Read SPEC.md before changing behavior.
 - `Sources/Superbar/System/` private calls (SkyLight, `_AXUIElementGetWindow`, CoreDock) looked up with dlsym, permissions, Carbon hotkey, power actions, Dock preferences, `Store` (UserDefaults).
 - `Sources/Superbar/UI/` panels (`GlassPanel`, `MouseCatcher`), the bar, Start menu, preview popover, calendar.
 - `build.sh` builds, signs, and installs `~/Applications/Superbar.app`.
-- `site/` the static website for GitHub Pages (no build step). `assets/app.js` holds the live demo; its rules are JS ports of `ClickResolver`, `SearchRanker`, `AppVisibility`, `EdgeReveal` timings, and `WorkArea.fit`, so change them together. Screenshots in `site/assets/img/` come from `tools/snap.sh`; never use ones that show a username, Wi-Fi name, or other personal detail. `.github/workflows/pages.yml` deploys it on pushes to `main`. Preview: `python3 -m http.server 8765 --directory site`.
+- `site/` the static website for GitHub Pages (no build step). Every picture is a real screenshot from `tools/snap.sh`, never a drawn mock-up; `assets/app.js` only wires the GitHub link and copy buttons. Settings shots are cropped 56 px (2x) at the top to drop the tab strip. Never use a shot that shows a username, Wi-Fi name, or other personal detail (snapshots label the home folder "Home"). `.github/workflows/pages.yml` deploys it on pushes to `main`. Preview: `python3 -m http.server 8765 --directory site`.
 
 ## Build and check
 
@@ -24,7 +24,7 @@ behaviors, and gotchas `docs/SPEC.md`. Read SPEC.md before changing behavior.
 - `tools/sdk.sh` (sourced by build.sh and tools/test.sh): with only the Command Line Tools, builds use the newest macOS 26.x SDK, because the 27.x SDK makes SwiftUI's `@State` a macro whose plugin only Xcode ships. For a bare `swift build`, run `source tools/sdk.sh` first.
 - Unit tests: `tools/test.sh` (adds the Testing macro plugin path the Command Line Tools leave out).
 - Self-test (real app functions on a test UserDefaults suite): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
-- Snapshots: `tools/snap.sh` writes `/tmp/Superbar-shots/<page>-light.png` and `-dark.png` for the bar (normal, small, hover glows), Start menu, preview, calendar, and Settings tabs, then quits. `APP_SNAPSHOT_PAGES=bar,start tools/snap.sh` limits the pages. Without Screen Recording for the launching app the glass is blank in the PNGs.
+- Snapshots: `tools/snap.sh` writes `/tmp/Superbar-shots/<page>-light.png` and `-dark.png` for the bar (normal, small, hover glows), Start menu, preview, tray popovers, calendar, and Settings tabs (long tabs page by page as `settings-general-2`, `-3`, plus `settings-autohide`), then quits. `APP_SNAPSHOT_PAGES=bar,start tools/snap.sh` limits the pages. Without Screen Recording for the launching app the glass is blank in the PNGs.
 - Grid: `tools/grid-lint.sh` prints PASS. Silence a line with `// grid: ok <why>`.
 - Snapshots and the self-test refuse to run without `APP_STORE`; they use the `com.maheshporeddy.superbar.test` suite, never the real pins, and never touch the real Dock.
 - A change is done when the build has no errors, the tests, self-test, and grid lint pass, and you looked at the light and dark snapshots.

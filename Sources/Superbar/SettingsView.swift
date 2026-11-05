@@ -143,7 +143,7 @@ struct GeneralSettings: View {
                     ForEach(BarSize.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                Picker("Taskbar", selection: $settings.barVisibility) {
+                Picker("Visibility", selection: $settings.barVisibility) {
                     ForEach(BarVisibility.allCases) { Text($0.title).tag($0) }
                 }
                 if settings.barVisibility != .alwaysShow {
