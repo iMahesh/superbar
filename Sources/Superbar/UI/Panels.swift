@@ -39,8 +39,7 @@ final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
 /// A borderless, non-activating panel over a glass blur. Only the Start menu
 /// sets `canKey`: the bar and popovers must never take focus from the front app.
 final class GlassPanel: NSPanel {
-    /// Can be turned on later, while a popover needs typing (a Wi-Fi password).
-    var canKey: Bool
+    private let canKey: Bool
     var onCancel: () -> Void = {}
     var onResignKey: () -> Void = {}
 

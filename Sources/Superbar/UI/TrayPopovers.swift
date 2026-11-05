@@ -1,7 +1,6 @@
 import AppKit
 import Observation
 import SwiftUI
-import SuperbarKit
 
 enum TrayItem: String, CaseIterable, Identifiable {
     case network, sound, battery
@@ -31,9 +30,9 @@ final class TrayPopoverController {
 
     func open(_ item: TrayItem, anchor: NSRect) {
         self.item = item
-        if item == .network { tray.openedNetwork() }
+        if item == .network { tray.readWiFi() }
         if item == .battery { tray.readBattery() }
-        let size = Self.size(for: item, wifi: tray.wifiOn != nil)
+        let size = Self.size(for: item)
         let panel = self.panel ?? GlassPanel(content: TrayPopoverView(controller: self, tray: tray),
                                              size: size, cornerRadius: 8, level: .popUpMenu)
         self.panel = panel
@@ -49,22 +48,15 @@ final class TrayPopoverController {
         }
     }
 
-    /// Lets the popover take typing, for a Wi-Fi password, without activating Superbar.
-    func allowTyping() {
-        panel?.canKey = true
-        panel?.makeKey()
-    }
-
     func close() {
-        panel?.canKey = false
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
         panel?.orderOut(nil)
     }
 
-    static func size(for item: TrayItem, wifi: Bool = false) -> NSSize {
+    static func size(for item: TrayItem) -> NSSize {
         switch item {
-        case .network: wifi ? NSSize(width: 300, height: 420) : NSSize(width: 280, height: 136)
+        case .network: NSSize(width: 280, height: 136)
         case .sound: NSSize(width: 280, height: 124)
         case .battery: NSSize(width: 280, height: 136)
         }
@@ -132,17 +124,11 @@ private struct NetworkPopover: View {
                 PopoverHeader(title: "Wi-Fi")
             }
             .toggleStyle(.switch)
-            if on {
-                WiFiNetworks(controller: controller, tray: tray, error: $error)
-            } else {
-                Text("Wi-Fi is off").foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-            }
         } else {
             PopoverHeader(title: "Network")
-            Label(tray.networkStatus, systemImage: tray.networkSymbol)
-                .foregroundStyle(.secondary)
         }
+        Label(tray.networkStatus, systemImage: tray.networkSymbol)
+            .foregroundStyle(.secondary)
         if let error {
             Text(error).font(.caption).foregroundStyle(.orange).lineLimit(2)
         }
@@ -150,158 +136,6 @@ private struct NetworkPopover: View {
         SettingsLink(title: tray.wifiOn == nil ? "Network Settings…" : "Wi-Fi Settings…") {
             controller.openSettings(tray.wifiOn == nil ? "com.apple.Network-Settings.extension" : "com.apple.wifi-settings-extension")
         }
-    }
-}
-
-/// The connected network, then the others in range, as Windows 7's network flyout lists them.
-private struct WiFiNetworks: View {
-    let controller: TrayPopoverController
-    let tray: TrayModel
-    @Binding var error: String?
-    @State private var asking: String?
-    @State private var password = ""
-
-    var body: some View {
-        if tray.locationAllowed != true {
-            LocationNote(controller: controller, tray: tray)
-        }
-        SectionTitle(title: "Currently connected to")
-        if let name = tray.wifiName {
-            NetworkRow(name: name, signal: tray.wifiRSSI.map { WiFiNetwork(name: name, rssi: $0, secure: false).signal } ?? 1,
-                       detail: tray.wifiRSSI.map { "Connected · " + WiFiNetwork(name: name, rssi: $0, secure: false).signalText } ?? "Connected",
-                       secure: false, action: nil)
-                .overlay(alignment: .trailing) {
-                    Button("Disconnect") { tray.disconnect() }
-                        .controlSize(.small)
-                        .padding(.trailing, Space.xs)
-                }
-        } else {
-            Text(tray.network == .wifi ? "A Wi-Fi network" : "Not connected")
-                .foregroundStyle(.secondary).padding(.horizontal, Space.sm)
-        }
-        HStack {
-            SectionTitle(title: "Other networks")
-            Spacer()
-            if tray.scanning { ProgressView().controlSize(.mini) }
-            else {
-                Button { tray.scanWiFi() } label: { Image(systemName: "arrow.clockwise") }
-                    .buttonStyle(.plain).foregroundStyle(.secondary)
-                    .help("Look for networks again").accessibilityLabel("Look for networks again")
-            }
-        }
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                if tray.nearby.isEmpty && !tray.scanning {
-                    Text(tray.locationAllowed == true ? "No other networks found" : "Network names need Location access")
-                        .foregroundStyle(.secondary).padding(.horizontal, Space.sm)
-                }
-                ForEach(tray.nearby) { network in
-                    NetworkRow(name: network.name, signal: network.signal,
-                               detail: tray.joining == network.name ? "Connecting…" : (network.known ? "Saved" : nil),
-                               secure: network.secure) { choose(network) }
-                    if asking == network.name {
-                        HStack(spacing: Space.sm) {
-                            SecureField("Password", text: $password)
-                                .textFieldStyle(.roundedBorder)
-                                .onSubmit { join(network) }
-                            Button("Join") { join(network) }
-                                .disabled(password.isEmpty)
-                        }
-                        .padding(.horizontal, Space.sm)
-                        .padding(.vertical, Space.xs)
-                    }
-                }
-            }
-        }
-        .frame(maxHeight: .infinity)
-    }
-
-    private func choose(_ network: WiFiNetwork) {
-        guard tray.joining == nil else { return }
-        error = nil
-        if network.secure && !network.known {
-            asking = asking == network.name ? nil : network.name
-            password = ""
-            if asking != nil { controller.allowTyping() }
-        } else {
-            join(network)
-        }
-    }
-
-    private func join(_ network: WiFiNetwork) {
-        let key = asking == network.name ? password : nil
-        if key?.isEmpty == true { return }
-        asking = nil
-        password = ""
-        Task {
-            error = await tray.join(network, password: key)
-            // A saved network whose password changed: ask for the new one.
-            if error != nil, network.secure, key == nil {
-                asking = network.name
-                controller.allowTyping()
-            }
-        }
-    }
-}
-
-private struct SectionTitle: View {
-    let title: String
-    var body: some View {
-        Text(title).font(.caption).foregroundStyle(.secondary).padding(.horizontal, Space.sm)
-    }
-}
-
-private struct NetworkRow: View {
-    let name: String
-    let signal: Double
-    let detail: String?
-    let secure: Bool
-    let action: (() -> Void)?
-    @State private var hovered = false
-
-    var body: some View {
-        HStack(spacing: Space.sm) {
-            Image(systemName: "wifi", variableValue: signal).frame(width: 20)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(name).lineLimit(1)
-                if let detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
-            }
-            Spacer(minLength: 0)
-            if secure {
-                Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary)
-                    .accessibilityLabel("Secured")
-            }
-        }
-        .padding(.horizontal, Space.sm)
-        .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 4).fill(.white.opacity(hovered && action != nil ? 0.16 : 0)))
-        .contentShape(Rectangle())
-        .onHover { hovered = $0 }
-        .onTapGesture { action?() }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(action == nil ? [] : .isButton)
-    }
-}
-
-/// macOS gives network names only to apps with Location access.
-private struct LocationNote: View {
-    let controller: TrayPopoverController
-    let tray: TrayModel
-
-    var body: some View {
-        HStack(alignment: .top, spacing: Space.sm) {
-            Image(systemName: "location.slash").foregroundStyle(.orange)
-            VStack(alignment: .leading, spacing: Space.xs) {
-                Text("macOS shows Wi-Fi network names only to apps with Location access. Superbar doesn't use your location.")
-                    .font(.caption).fixedSize(horizontal: false, vertical: true)
-                Button("Allow in Settings…") {
-                    controller.openSettings("com.apple.preference.security?Privacy_LocationServices")
-                }
-                .controlSize(.small)
-            }
-        }
-        .padding(Space.sm)
-        .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.08)))
     }
 }
 

@@ -277,16 +277,6 @@ Acceptance:
 - [manual] A real click on the strip. Not checked: synthetic clicks from my shell didn't reach the bar.
 Status: built
 
-### S-030 Wi-Fi networks in the tray
-As the user, the Wi-Fi popover shows which network I'm on and the others around me, and joins one with a click.
-Depends: S-013
-Acceptance:
-- [unit] WiFiList keeps the strongest of each name, drops hidden and connected networks, sorts saved first, then by signal and name; signal has four levels.
-- [snap] tray-network shows the connected network, Disconnect, and four other networks with bars and locks.
-- [manual] Location prompt, then the real list. Verified 2026-11-05: after Allow, connected to CPH GLOBAL at −57 dBm and 19 networks nearby, the four saved ones first.
-- [manual] Joining a network and Disconnect. Not checked: it would have dropped this Mac's connection.
-Status: built
-
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek
