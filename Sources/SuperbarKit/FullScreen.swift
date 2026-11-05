@@ -1,8 +1,8 @@
 import CoreGraphics
 
-/// Over a full-screen app the bar hides, and slides up when the pointer rests on
-/// the bottom edge of the main screen, like the Dock. Feed it the pointer every
-/// tick; it says when to show or hide.
+/// When the bar hides (auto-hide, always hide, or a full-screen app), it slides up when
+/// the pointer rests on the bottom edge of its screen, like the Dock. Feed it the
+/// pointer every tick; it says when to show or hide.
 public struct EdgeReveal: Equatable, Sendable {
     public enum Action: Equatable, Sendable { case none, show, hide }
 
@@ -15,6 +15,9 @@ public struct EdgeReveal: Equatable, Sendable {
     public var edge: Double = 2
     /// Extra room above the bar the pointer may wander before the hide timer starts.
     public var slack: Double = 12
+    /// False for "always hide": the edge does nothing, and only the Start menu or
+    /// another popover (heldOpen) brings the bar up.
+    public var edgeEnabled = true
 
     public private(set) var isRevealed = false
     private var edgeSince: Double?
@@ -36,7 +39,7 @@ public struct EdgeReveal: Equatable, Sendable {
                 edgeSince = nil
                 return .show
             }
-            guard let y = pointerHeight, y <= edge else { edgeSince = nil; return .none }
+            guard edgeEnabled, let y = pointerHeight, y <= edge else { edgeSince = nil; return .none }
             if edgeSince == nil { edgeSince = now }
             guard now - (edgeSince ?? now) >= showDelay else { return .none }
             isRevealed = true
@@ -54,17 +57,29 @@ public struct EdgeReveal: Equatable, Sendable {
         return .hide
     }
 
-    /// Back to hidden, as when full screen starts.
+    /// Back to hidden, as when full screen starts. Keeps the delays and the edge setting.
     public mutating func reset() {
-        self = EdgeReveal(showDelay: showDelay, hideDelay: hideDelay, edge: edge, slack: slack)
+        isRevealed = false
+        edgeSince = nil
+        outsideSince = nil
     }
+}
 
-    init(showDelay: Double, hideDelay: Double, edge: Double, slack: Double) {
-        self.showDelay = showDelay
-        self.hideDelay = hideDelay
-        self.edge = edge
-        self.slack = slack
-    }
+/// When the bar stays up. Over a full-screen app it hides in every mode.
+public enum BarVisibility: String, CaseIterable, Sendable {
+    case alwaysShow, autoHide, alwaysHide
+
+    /// Is the bar hidden until revealed, on a screen that is or isn't in full screen?
+    public func hides(fullScreen: Bool) -> Bool { fullScreen || self != .alwaysShow }
+
+    /// Does resting the pointer on the bottom edge reveal it?
+    public var edgeReveals: Bool { self != .alwaysHide }
+
+    /// Should windows be kept out from under the bar? Only while it stays up.
+    public var reservesSpace: Bool { self == .alwaysShow }
+
+    /// The hide delay is a number of seconds from Settings, kept to this range.
+    public static func clampDelay(_ seconds: Double) -> Double { min(max(seconds, 0), 10) }
 }
 
 /// The fallback full-screen check when Accessibility is off: a normal-layer window

@@ -57,8 +57,9 @@ nonisolated enum FullScreenDetector {
     }
 }
 
-/// Places one display's bar, and over a full-screen app on that display hides it
-/// until the pointer rests on its bottom edge (EdgeReveal), like the Dock.
+/// Places one display's bar, and hides it when Settings says auto-hide or always hide,
+/// or while that display shows a full-screen app. A hidden bar comes up when the pointer
+/// rests on the bottom edge (not in always hide) or the Start menu or a popover opens.
 @Observable
 final class BarPresenter {
     private(set) var isFullScreen = false
@@ -101,6 +102,7 @@ final class BarPresenter {
         t.tolerance = 0.5
         RunLoop.main.add(t, forMode: .common)
         checkTimer = t
+        applyVisibility()
         check()
     }
 
@@ -167,21 +169,39 @@ final class BarPresenter {
     func setFullScreen(_ on: Bool) {
         guard on != isFullScreen else { return }
         isFullScreen = on
-        reveal.reset()
-        if on {
-            slide(show: heldOpen())
+        applyVisibility(restart: true)
+        onFullScreenChange()
+    }
+
+    // MARK: Hiding
+
+    /// Is the bar hidden until revealed right now?
+    var hides: Bool { settings.barVisibility.hides(fullScreen: isFullScreen) }
+
+    /// After a Settings change or a full-screen change: hide or show, and poll the
+    /// pointer only while hiding. `restart` hides a revealed bar again (full screen starts).
+    func applyVisibility(restart: Bool = false) {
+        reveal.hideDelay = settings.autoHideDelay
+        reveal.edgeEnabled = settings.barVisibility.edgeReveals
+        if hides {
+            if restart || pollTimer == nil {
+                reveal.reset()
+                if heldOpen() { _ = reveal.update(pointerHeight: nil, barHeight: 0, heldOpen: true, now: 0) }
+                slide(show: reveal.isRevealed)
+            }
             startPolling()
         } else {
             stopPolling()
+            reveal.reset()
             slide(show: true)
         }
-        onFullScreenChange()
     }
 
     private func startPolling() {
         guard pollTimer == nil else { return }
         let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.poll() }
+            // Off while the self-test feeds the pointer and the clock by hand.
+            MainActor.assumeIsolated { if self?.detectionEnabled == true { self?.poll() } }
         }
         RunLoop.main.add(t, forMode: .common)   // .common: keeps running while a menu tracks
         pollTimer = t
@@ -193,7 +213,7 @@ final class BarPresenter {
     }
 
     func poll(pointer: NSPoint = NSEvent.mouseLocation, now: Double = ProcessInfo.processInfo.systemUptime) {
-        guard isFullScreen, let frame = screen?.frame else { return }
+        guard hides, let frame = screen?.frame else { return }
         let onScreen = pointer.x >= frame.minX && pointer.x < frame.maxX && pointer.y >= frame.minY && pointer.y < frame.maxY
         let action = reveal.update(pointerHeight: onScreen ? Double(pointer.y - frame.minY) : nil,
                                    barHeight: Double(settings.metrics.height),

@@ -173,6 +173,38 @@ private final class FakeDock: DockPreferences {
     #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 10.8) == .hide)
 }
 
+@Test func edgeRevealUsesTheChosenHideDelay() {
+    var r = EdgeReveal()
+    r.hideDelay = 3
+    _ = r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0)
+    #expect(r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0.3) == .show)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 1) == .none)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 3.9) == .none)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 4.0) == .hide)
+    r.reset()
+    #expect(r.hideDelay == 3)   // reset keeps the delay
+}
+
+@Test func alwaysHideIgnoresTheEdgeButShowsForTheStartMenu() {
+    var r = EdgeReveal()
+    r.edgeEnabled = false
+    _ = r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 0)
+    #expect(r.update(pointerHeight: 0, barHeight: 40, heldOpen: false, now: 5) == .none)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: true, now: 6) == .show)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 6.1) == .none)
+    #expect(r.update(pointerHeight: 500, barHeight: 40, heldOpen: false, now: 6.8) == .hide)
+}
+
+@Test func barVisibilityModes() {
+    #expect(!BarVisibility.alwaysShow.hides(fullScreen: false))
+    #expect(BarVisibility.alwaysShow.hides(fullScreen: true))
+    #expect(BarVisibility.autoHide.hides(fullScreen: false))
+    #expect(BarVisibility.alwaysHide.hides(fullScreen: false))
+    #expect(BarVisibility.autoHide.edgeReveals && !BarVisibility.alwaysHide.edgeReveals)
+    #expect(BarVisibility.alwaysShow.reservesSpace && !BarVisibility.autoHide.reservesSpace)
+    #expect(BarVisibility.clampDelay(-1) == 0 && BarVisibility.clampDelay(42) == 10 && BarVisibility.clampDelay(1.5) == 1.5)
+}
+
 @Test func screenCoverFindsOnlyWholeScreenWindowsOfTheFrontApp() {
     let screen = CGRect(x: 0, y: 0, width: 1512, height: 982)
     let full = ScreenCover.Window(bounds: screen, layer: 0, ownerPID: 7)

@@ -156,6 +156,47 @@ enum SelfTest {
                 check("leaving full screen brings the bar back",
                       presenter.isShown && app.bar.isVisible && abs(app.bar.frame.minY - screen.minY) < 1 && app.bar.alphaValue > 0.99)
                 presenter.detectionEnabled = true
+
+                // S-026: auto-hide with the chosen delay, and always hide.
+                presenter.detectionEnabled = false
+                app.settings.autoHideDelay = 2
+                app.settings.barVisibility = .autoHide
+                presenter.applyVisibility()
+                try? await Task.sleep(for: .seconds(0.4))
+                check("auto-hide hides the bar", !presenter.isShown && !app.bar.isVisible)
+                var u = ProcessInfo.processInfo.systemUptime
+                presenter.poll(pointer: edge, now: u)
+                presenter.poll(pointer: edge, now: u + 0.3)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("auto-hide: resting on the bottom edge brings it up", presenter.isShown && app.bar.isVisible)
+                presenter.poll(pointer: away, now: u + 1)
+                presenter.poll(pointer: away, now: u + 2.5)
+                check("auto-hide waits the chosen 2 s before hiding", presenter.isShown)
+                presenter.poll(pointer: away, now: u + 3.1)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("auto-hide hides after the delay", !presenter.isShown)
+                app.settings.barVisibility = .alwaysHide
+                app.settings.autoHideDelay = 0.5
+                presenter.applyVisibility()
+                u = ProcessInfo.processInfo.systemUptime
+                presenter.poll(pointer: edge, now: u)
+                presenter.poll(pointer: edge, now: u + 1)
+                check("always hide: the bottom edge does nothing", !presenter.isShown)
+                app.startMenu.open()
+                presenter.poll(pointer: away, now: u + 1.1)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("always hide: the Start menu brings the bar up", presenter.isShown && app.bar.isVisible)
+                app.startMenu.close()
+                presenter.poll(pointer: away, now: u + 2)
+                presenter.poll(pointer: away, now: u + 2.6)
+                try? await Task.sleep(for: .seconds(0.4))
+                check("always hide: it goes away when the Start menu closes", !presenter.isShown)
+                app.settings.barVisibility = .alwaysShow
+                presenter.applyVisibility()
+                try? await Task.sleep(for: .seconds(0.4))
+                check("always show brings the bar back for good",
+                      presenter.isShown && app.bar.isVisible && abs(app.bar.frame.minY - screen.minY) < 1)
+                presenter.detectionEnabled = true
             }
 
             // Tray: each icon is its own clickable view, and each opens its popover.

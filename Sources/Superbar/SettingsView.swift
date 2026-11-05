@@ -115,6 +115,14 @@ struct GeneralSettings: View {
     let dock: DockController
     private let hotkeys = HotkeyCenter.shared
 
+    private var visibilityNote: String {
+        switch settings.barVisibility {
+        case .alwaysShow: "The bar stays up. It still hides over full-screen apps until you point at the bottom edge."
+        case .autoHide: "The bar hides when the pointer leaves it. Rest the pointer on the bottom edge to bring it back. Windows can use the whole screen."
+        case .alwaysHide: "The bar stays out of sight. Press the Start shortcut to bring it up with the Start menu. Windows can use the whole screen."
+        }
+    }
+
     var body: some View {
         Form {
             Section {
@@ -135,6 +143,16 @@ struct GeneralSettings: View {
                     ForEach(BarSize.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
+                Picker("Taskbar", selection: $settings.barVisibility) {
+                    ForEach(BarVisibility.allCases) { Text($0.title).tag($0) }
+                }
+                if settings.barVisibility != .alwaysShow {
+                    Stepper(value: $settings.autoHideDelay, in: 0...10, step: 0.5) {
+                        LabeledContent("Hide after", value: "\(settings.autoHideDelay.formatted(.number.precision(.fractionLength(1)))) s")
+                    }
+                }
+                Text(visibilityNote)
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("Combine buttons and hide labels", isOn: .constant(true))
                     .disabled(true)
                 Text("Superbar always groups an app's windows on one button.")

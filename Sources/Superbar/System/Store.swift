@@ -23,5 +23,7 @@ enum Store {
         static let keepWindowsAbove = "keepWindowsAbove"
         static let startHotkey = "startHotkey"
         static let hiddenTrayIcons = "hiddenTrayIcons"
+        static let barVisibility = "barVisibility"
+        static let autoHideDelay = "autoHideDelay"
     }
 }

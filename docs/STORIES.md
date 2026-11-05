@@ -236,6 +236,16 @@ Acceptance:
 - [manual] One click opens Mission Control; Esc or a second click closes it.
 Status: built
 
+### S-026 Auto-hide and always hide
+As the user, I choose whether the bar always shows, hides until I point at the bottom edge after a delay I set in seconds, or stays hidden until I open Start.
+Depends: S-017
+Acceptance:
+- [unit] EdgeReveal waits the chosen hide delay, keeps it across a reset, and with the edge off shows only for the Start menu; BarVisibility says when each mode hides and reserves space, and keeps the delay within 0 to 10 s.
+- [self-test] Auto-hide hides the bar, the edge brings it up, it stays for the 2 s delay and then hides; always hide ignores the edge, comes up with the Start menu and goes when it closes; always show brings it back.
+- [manual] Auto-hide with a 1.5 s delay. Verified 2026-11-04: hidden at rest, up after resting on the bottom edge, held while over it, still up 1.0 s after leaving and gone by 2.2 s. Always hide: the edge did nothing. Always show: the bar is back.
+- [manual] Always hide: ⌃⎋ brings the bar up with Start. Not tried by hand: a key sent from a script doesn't reach the shortcut.
+Status: built
+
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek

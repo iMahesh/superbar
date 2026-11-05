@@ -78,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         observeBarSize()
+        observeVisibility()
 
         // Prewarm: build the Start panel and the popover and index apps, so the first open is instant.
         Task {
@@ -124,7 +125,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let fitter = WindowFitter.shared
         fitter.isActive = { [unowned self] in settings.keepWindowsAbove }
         fitter.areas = { [unowned self] in
-            bars.filter { !$0.isFullScreen }.compactMap { $0.screen }
+            // A bar that hides doesn't take room, like the Dock with auto-hide.
+            bars.filter { !$0.isFullScreen && settings.barVisibility.reservesSpace }.compactMap { $0.screen }
                 .map { FitArea.of($0, barHeight: settings.metrics.height) }
         }
         let center = NSWorkspace.shared.notificationCenter
@@ -188,6 +190,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 SuperbarMain.delegate.layoutBar()
                 WindowFitter.shared.scanAll()
                 SuperbarMain.delegate.observeBarSize()
+            }
+        }
+    }
+
+    /// Auto-hide, always hide, and the hide delay take effect at once on every bar.
+    private func observeVisibility() {
+        withObservationTracking { _ = (settings.barVisibility, settings.autoHideDelay) } onChange: {
+            Task { @MainActor in
+                let app = SuperbarMain.delegate
+                for presenter in app.bars { presenter.applyVisibility() }
+                WindowFitter.shared.scanAll()
+                app.observeVisibility()
             }
         }
     }

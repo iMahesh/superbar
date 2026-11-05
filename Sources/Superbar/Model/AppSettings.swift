@@ -17,6 +17,17 @@ enum TrayIcon: String, CaseIterable, Identifiable {
     }
 }
 
+extension BarVisibility: Identifiable {
+    public var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .alwaysShow: "Always show"
+        case .autoHide: "Auto-hide"
+        case .alwaysHide: "Always hide"
+        }
+    }
+}
+
 enum BarSize: String, CaseIterable, Identifiable {
     case small, normal
     var id: String { rawValue }
@@ -56,6 +67,20 @@ final class AppSettings {
         didSet { defaults.set(barSize.rawValue, forKey: Store.Key.barSize) }
     }
 
+    /// Always show, auto-hide, or always hide (only the Start shortcut brings it up).
+    var barVisibility: BarVisibility {
+        didSet { defaults.set(barVisibility.rawValue, forKey: Store.Key.barVisibility) }
+    }
+
+    /// Seconds the bar waits after the pointer leaves it before it hides.
+    var autoHideDelay: Double {
+        didSet {
+            let clamped = BarVisibility.clampDelay(autoHideDelay)
+            if clamped != autoHideDelay { autoHideDelay = clamped; return }
+            defaults.set(autoHideDelay, forKey: Store.Key.autoHideDelay)
+        }
+    }
+
     /// Move or trim windows so nothing hides under the bar. Default on.
     var keepWindowsAbove: Bool {
         didSet {
@@ -90,6 +115,8 @@ final class AppSettings {
 
     init() {
         barSize = BarSize(rawValue: defaults.string(forKey: Store.Key.barSize) ?? "") ?? .normal
+        barVisibility = BarVisibility(rawValue: defaults.string(forKey: Store.Key.barVisibility) ?? "") ?? .alwaysShow
+        autoHideDelay = BarVisibility.clampDelay(defaults.object(forKey: Store.Key.autoHideDelay) as? Double ?? 0.5)
         keepWindowsAbove = defaults.object(forKey: Store.Key.keepWindowsAbove) as? Bool ?? true
         hiddenTrayIcons = Set((defaults.stringArray(forKey: Store.Key.hiddenTrayIcons) ?? []).compactMap(TrayIcon.init))
         startHotkey = defaults.data(forKey: Store.Key.startHotkey)
