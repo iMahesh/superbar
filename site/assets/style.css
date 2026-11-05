@@ -149,6 +149,8 @@ h1, h2, .hero-sub, .lede, .hero-lede { text-wrap: balance; }
 .copy { border: 0; background: var(--btn); color: #fff; border-radius: 980px; padding: 4px 14px; font-size: 13px; cursor: pointer; flex: none; }
 .copy:hover { background: var(--btn-hover); }
 
+.note-center { margin: 20px 0 0; font-size: 14px; color: var(--muted); }
+
 /* Footer */
 .footer { background: var(--bg-alt); border-top: 1px solid var(--line); padding: 24px 0 40px; }
 .footer .contact { font-size: 14px; color: var(--text); margin-bottom: 14px; }
