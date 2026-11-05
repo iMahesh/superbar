@@ -6,6 +6,8 @@
 # Usage: ./build.sh            release build, install
 #        ./build.sh --debug    debug build, install
 #        ./build.sh --open     install, then quit the running copy and open the new one
+#        APP_DIR=dir ./build.sh  build the app into another folder (tools/package.sh)
+#        UNIVERSAL=1 ./build.sh  also build for Intel Macs, as one binary
 set -euo pipefail
 here=${0:A:h}
 name="Superbar"
@@ -25,6 +27,14 @@ fi
 swift build -c $config --package-path "$here" --scratch-path "$scratch" 2>&1 | grep -E "error|warning|Build complete" | grep -v "^\[" || true
 bin="$scratch/$config/$name"
 [[ -x "$bin" ]] || { echo "build failed"; exit 1; }
+if [[ -n "${UNIVERSAL:-}" ]]; then
+  # The Command Line Tools can't build both at once (that needs Xcode), so build Intel
+  # separately and join the two with lipo.
+  swift build -c $config --package-path "$here" --scratch-path "$scratch-x86_64" --triple x86_64-apple-macosx26.0 2>&1 | grep -E "error" | head -20 || true
+  [[ -x "$scratch-x86_64/$config/$name" ]] || { echo "Intel build failed"; exit 1; }
+  lipo -create "$bin" "$scratch-x86_64/$config/$name" -output "$scratch/$name-universal"
+  bin="$scratch/$name-universal"
+fi
 # swift build can report success while an edited file failed to compile. Catch that.
 stale=$(find "$here/Sources" -name '*.swift' -newer "$bin" | head -1)
 if [[ -n "$stale" ]]; then
@@ -33,8 +43,8 @@ if [[ -n "$stale" ]]; then
   exit 1
 fi
 
-app="$HOME/Applications/$name.app"
-mkdir -p "$HOME/Applications"
+app="${APP_DIR:-$HOME/Applications}/$name.app"
+mkdir -p "${app:h}"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$name"
