@@ -18,7 +18,7 @@ enum Snapshot {
     static func runIfRequested(_ app: AppDelegate) -> Bool {
         guard let dir = directory else { return false }
         guard Store.isOverridden else {
-            print("SNAPSHOT refused: set APP_STORE so real pins are never touched")
+            log("SNAPSHOT refused: set APP_STORE so real pins are never touched")
             NSApp.terminate(nil)
             return true
         }
@@ -66,10 +66,32 @@ enum Snapshot {
                 }
 
                 if wanted("preview") {
+                    // Real windows with sample pages, so the preview shows real thumbnails.
+                    // The second is captured, then minimized: the preview keeps its last picture.
+                    let windows = SnapshotWindows.open()
+                    try? await Task.sleep(for: .seconds(0.8))
+                    useSafariWindows(app, windows, minimizedSecond: false)
+                    await WindowThumbnails.shared.capture(windows.map { CGWindowID($0.windowNumber) })
+                    // ScreenCaptureKit can be refused for Superbar itself; screencapture works
+                    // whenever the launching app has Screen Recording.
+                    for window in windows where WindowThumbnails.shared.images[CGWindowID(window.windowNumber)] == nil {
+                        if let image = screencaptureThumbnail(window) {
+                            WindowThumbnails.shared.setForTesting(image, for: CGWindowID(window.windowNumber))
+                        }
+                    }
+                    windows[1].miniaturize(nil)
+                    try? await Task.sleep(for: .seconds(1))
+                    useSafariWindows(app, windows, minimizedSecond: true)
                     let rect = buttonRect(app, index: 1)
                     app.preview.showNow("com.apple.Safari", anchor: rect)
+                    log("SNAPSHOT preview: Screen Recording for Superbar: \(CGPreflightScreenCaptureAccess())")
+                    let pictures = windows.filter { WindowThumbnails.shared.images[CGWindowID($0.windowNumber)] != nil }.count
+                    if pictures < windows.count {
+                        log("SNAPSHOT preview: \(pictures) of \(windows.count) thumbnails (needs Screen Recording for the launching app)")
+                    }
                     await shot("preview", popover(app))
                     app.preview.hide()
+                    windows.forEach { $0.close() }
                 }
 
                 if wanted("tray") {
@@ -110,7 +132,7 @@ enum Snapshot {
                     app.settingsWindow.settingsWindow?.close()
                 }
             }
-            print("SNAPSHOT done \(dir)")
+            log("SNAPSHOT done \(dir)")
             NSApp.terminate(nil)
         }
         return true
@@ -129,8 +151,8 @@ enum Snapshot {
                               glowColor: cache.glow(for: id, icon: icon))
         }
         let safariWindows = [
-            AppWindow(windowID: 0, element: element, title: "Superbar – Release notes", isMinimized: false),
-            AppWindow(windowID: 0, element: AXUIElementCreateApplication(1), title: "Weather in Lisbon", isMinimized: true),
+            AppWindow(windowID: 0, element: element, title: SnapshotWindows.releaseNotesTitle, isMinimized: false),
+            AppWindow(windowID: 0, element: AXUIElementCreateApplication(1), title: SnapshotWindows.weatherTitle, isMinimized: true),
         ]
         app.model.staticApps = [
             make("com.apple.finder", pid: 10, pinned: true, windows: [AppWindow(windowID: 0, element: element, title: "Downloads", isMinimized: false)]),
@@ -148,6 +170,51 @@ enum Snapshot {
                                wifiName: "Home")
         for id in ["com.apple.TextEdit", "com.apple.Preview", "com.apple.calculator"] { app.model.noteRecent(id) }
         app.appIndex.start()
+    }
+
+    /// Prints a line and appends it to snapshot.log in the output folder, so a run started
+    /// from another terminal can be read afterwards.
+    private static func log(_ line: String) {
+        print(line)
+        guard let dir = directory, let data = (line + "\n").data(using: .utf8) else { return }
+        let path = dir + "/snapshot.log"
+        if let handle = FileHandle(forWritingAtPath: path) {
+            handle.seekToEndOfFile()
+            handle.write(data)
+            try? handle.close()
+        } else {
+            FileManager.default.createFile(atPath: path, contents: data)
+        }
+    }
+
+    /// A window's picture through /usr/sbin/screencapture, sized like a preview thumbnail.
+    private static func screencaptureThumbnail(_ window: NSWindow) -> NSImage? {
+        let path = NSTemporaryDirectory() + "superbar-thumb-\(window.windowNumber).png"
+        try? FileManager.default.removeItem(atPath: path)
+        let shot = Process()
+        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        shot.arguments = ["-x", "-o", "-l", String(window.windowNumber), path]
+        try? shot.run()
+        shot.waitUntilExit()
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        guard let image = NSImage(contentsOfFile: path), image.size.width > 0 else {
+            log("SNAPSHOT thumbnail failed for window \(window.windowNumber) (screencapture exit \(shot.terminationStatus), visible: \(window.isVisible), occlusion visible: \(window.occlusionState.contains(.visible)))")
+            return nil
+        }
+        let scale = min(220 / image.size.width, 140 / image.size.height)
+        image.size = NSSize(width: (image.size.width * scale).rounded(), height: (image.size.height * scale).rounded())
+        return image
+    }
+
+    /// Points Safari's sample button at the real snapshot windows.
+    private static func useSafariWindows(_ app: AppDelegate, _ windows: [NSWindow], minimizedSecond: Bool) {
+        guard var apps = app.model.staticApps, let i = apps.firstIndex(where: { $0.id == "com.apple.Safari" }) else { return }
+        let element = AXUIElementCreateApplication(getpid())
+        apps[i].windows = windows.enumerated().map { n, window in
+            AppWindow(windowID: CGWindowID(window.windowNumber), element: element, title: window.title,
+                      isMinimized: minimizedSecond && n == 1)
+        }
+        app.model.staticApps = apps
     }
 
     /// The tallest scroll view in a window: the Settings form.
@@ -206,7 +273,7 @@ enum Snapshot {
             try? shot.run()
             shot.waitUntilExit()
             if FileManager.default.fileExists(atPath: path) {
-                print("SNAPSHOT \(path)")
+                log("SNAPSHOT \(path)")
                 return
             }
             Thread.sleep(forTimeInterval: 0.5)
@@ -215,7 +282,7 @@ enum Snapshot {
         view.cacheDisplay(in: view.bounds, to: rep)
         if let data = rep.representation(using: .png, properties: [:]) {
             try? data.write(to: URL(fileURLWithPath: path))
-            print("SNAPSHOT \(path) (fallback: no Screen Recording permission, glass is blank)")
+            log("SNAPSHOT \(path) (fallback: no Screen Recording permission, glass is blank)")
         }
     }
 }
