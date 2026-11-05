@@ -105,16 +105,19 @@ enum SelfTest {
 
             // S-015: a fake Dock, never the real one.
             final class FakeDock: DockPreferences {
-                var autohide: Bool? = false
-                var autohideDelay: Double? = 0.2
-                func write(autohide: Bool?, autohideDelay: Double?) { self.autohide = autohide; self.autohideDelay = autohideDelay }
+                var prefs: [String: Any] = ["autohide": false, "autohide-delay": 0.2, "orientation": "left", "tilesize": 48.0]
+                func value(_ key: String) -> Any? { prefs[key] }
+                func write(_ values: [String: Any?]) { for (k, v) in values { prefs[k] = v } }
                 func restartDock() {}
             }
             let fake = FakeDock()
             let control = DockControl(prefs: fake, store: Store.defaults)
             control.hideDock()
             control.restoreDock()
-            check("Restore Dock puts back the exact settings", fake.autohide == false && fake.autohideDelay == 0.2)
+            check("Restore Dock puts back the exact settings",
+                  fake.prefs["autohide"] as? Bool == false && fake.prefs["autohide-delay"] as? Double == 0.2
+                  && fake.prefs["orientation"] as? String == "left" && fake.prefs["tilesize"] as? Double == 48
+                  && fake.prefs["magnification"] == nil, "\(fake.prefs)")
 
             // S-017: full screen, driven by hand so no real app has to go full screen.
             if let presenter = app.barPresenter, let screen = NSScreen.screens.first?.frame {

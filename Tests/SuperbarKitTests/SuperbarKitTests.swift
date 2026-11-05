@@ -105,29 +105,47 @@ private func icon(_ fill: (Int) -> (UInt8, UInt8, UInt8, UInt8)) -> [UInt8] {
 
 // S-015
 private final class FakeDock: DockPreferences {
-    var autohide: Bool?
-    var autohideDelay: Double?
+    var prefs: [String: Any]
     var restarts = 0
-    init(autohide: Bool?, delay: Double?) { self.autohide = autohide; self.autohideDelay = delay }
-    func write(autohide: Bool?, autohideDelay: Double?) { self.autohide = autohide; self.autohideDelay = autohideDelay }
+    init(_ prefs: [String: Any]) { self.prefs = prefs }
+    func value(_ key: String) -> Any? { prefs[key] }
+    func write(_ values: [String: Any?]) { for (k, v) in values { prefs[k] = v } }
     func restartDock() { restarts += 1 }
 }
 
 @Test func dockControlSavesOldValuesFirstAndRestoresThem() {
     let store = UserDefaults(suiteName: "superbar.tests.\(UUID().uuidString)")!
-    let dock = FakeDock(autohide: false, delay: nil)
+    let dock = FakeDock(["autohide": false, "orientation": "left", "tilesize": 64.0])
     let control = DockControl(prefs: dock, store: store)
     control.hideDock()
-    #expect(control.hasSavedState)
-    #expect(control.savedAutohide == false && control.savedDelay == nil)
-    #expect(dock.autohide == true && dock.autohideDelay == 1000)
+    #expect(control.hasSavedState && !control.needsUpgrade)
+    #expect(control.savedValue("autohide") as? Bool == false && control.savedValue("autohide-delay") == nil)
+    #expect(dock.prefs["autohide"] as? Bool == true && dock.prefs["autohide-delay"] as? Double == 1000)
+    // At the bottom with small icons: minimizing goes toward the bar, Mission Control's Dock fits under it.
+    #expect(dock.prefs["orientation"] as? String == "bottom" && dock.prefs["tilesize"] as? Double == 16)
     // Hiding twice must not overwrite the saved originals with our own values.
     control.hideDock()
-    #expect(control.savedAutohide == false)
+    #expect(control.savedValue("orientation") as? String == "left")
     control.restoreDock()
-    #expect(dock.autohide == false && dock.autohideDelay == nil)
+    #expect(dock.prefs["autohide"] as? Bool == false && dock.prefs["autohide-delay"] == nil)
+    #expect(dock.prefs["orientation"] as? String == "left" && dock.prefs["tilesize"] as? Double == 64)
+    #expect(dock.prefs["magnification"] == nil)
     #expect(!control.hasSavedState)
     #expect(dock.restarts == 3)
+}
+
+@Test func dockControlUpgradesTheFirstSavedFormat() {
+    let store = UserDefaults(suiteName: "superbar.tests.\(UUID().uuidString)")!
+    // Saved by the first version: only autohide and its delay, which were then unset.
+    store.set(["saved": true], forKey: "dockControl.saved")
+    let dock = FakeDock(["autohide": true, "autohide-delay": 1000.0, "orientation": "left", "tilesize": 16.0])
+    let control = DockControl(prefs: dock, store: store)
+    #expect(control.needsUpgrade)
+    control.hideDock()
+    #expect(!control.needsUpgrade && dock.prefs["orientation"] as? String == "bottom")
+    control.restoreDock()
+    #expect(dock.prefs["autohide"] == nil && dock.prefs["autohide-delay"] == nil)   // the true originals
+    #expect(dock.prefs["orientation"] as? String == "left")
 }
 
 @Test func keyComboShowsSymbols() {

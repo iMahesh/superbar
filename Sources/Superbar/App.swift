@@ -58,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if SelfTest.runIfRequested(self) { return }
 
         model.startWatching()
+        dock.upgradeIfNeeded()
         barsStarted = true
         for presenter in bars { presenter.start() }
         startWindowFitter()

@@ -257,6 +257,17 @@ Acceptance:
 - [manual] A window with a large minimum size stays inside the free area. Not tried.
 Status: built
 
+### S-028 Hidden Dock stays out of the way
+As the user, minimized windows shrink toward the bottom where Superbar is, and the Dock doesn't show in Mission Control.
+Depends: S-015
+Acceptance:
+- [unit] DockControl saves every key it changes before writing, keeps the originals when hiding twice, restores them all (unset keys are removed), and upgrades the first saved format.
+- [self-test] Restore Dock puts back autohide, delay, side, and icon size exactly.
+- [manual] Upgrade of a Dock hidden by S-015. Verified 2026-11-04: on relaunch the Dock moved from left to bottom; left and 16 pt were saved.
+- [manual] Mission Control. Verified 2026-11-04 through the Dock's AX frame: the Dock's list sits at y 860–890, inside the bar's 860–900, and the bar stays on screen above it.
+- [manual] Minimizing shrinks toward the bottom. Not checked by eye: my shell can't record the screen. Minimizing into the exact button isn't possible (no API).
+Status: built
+
 ## Dropped
 - Jump Lists with recent documents per app
 - Aero Peek
