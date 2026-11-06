@@ -9,15 +9,158 @@
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Superbar — a glass taskbar for macOS</title>
-  <meta name="description" content="Superbar puts a glass bar along the bottom of every Mac display: a Start menu with search, one button per app, window previews, snapping, auto-hide, a tray, and a clock.">
-  <meta property="og:title" content="Superbar — a glass taskbar for macOS">
-  <meta property="og:description" content="A Start menu, one button per app, window previews, window snapping, and a tray. On every display.">
-  <meta property="og:image" content="assets/img/icon-512.png">
+  <title>Superbar: Windows-Style Taskbar for Mac | Dock Alternative</title>
+  <meta name="description" content="Superbar is a Windows 7 style taskbar for Mac: a Start menu with search, one button per app, live window previews, window snapping, auto-hide, a system tray, and a clock on every display. A Dock alternative for macOS 26 or later.">
+  <meta name="keywords" content="taskbar for Mac, Windows taskbar for macOS, Dock alternative, Dock replacement, Start menu for Mac, window previews, window snapping Mac, multi-monitor taskbar">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="Superbar">
+  <link rel="canonical" href="https://superbar.cc/">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <meta name="color-scheme" content="light dark">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Superbar">
+  <meta property="og:url" content="https://superbar.cc/">
+  <meta property="og:title" content="Superbar — the taskbar your Mac never had">
+  <meta property="og:description" content="A Windows-style taskbar for macOS: Start menu, one button per app, window previews, snapping, and a tray. On every display.">
+  <meta property="og:image" content="https://superbar.cc/assets/img/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Superbar: the taskbar your Mac never had, above a screenshot of the bar">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Superbar — the taskbar your Mac never had">
+  <meta name="twitter:description" content="A Windows-style taskbar for macOS: Start menu, window previews, snapping, and a tray on every display.">
+  <meta name="twitter:image" content="https://superbar.cc/assets/img/og-image.png">
+
   <link rel="icon" href="assets/img/favicon-64.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="preload" as="image" href="assets/img/icon-512.png" fetchpriority="high">
   <link rel="stylesheet" href="assets/style.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://superbar.cc/#app",
+        "name": "Superbar",
+        "url": "https://superbar.cc/",
+        "description": "Superbar is a Windows 7 style taskbar for Mac: a Start menu with search, one button per app, live window previews, window snapping, auto-hide, a system tray, and a clock on every display. A Dock alternative for macOS 26 or later.",
+        "applicationCategory": "UtilitiesApplication",
+        "applicationSubCategory": "Taskbar and Dock replacement",
+        "operatingSystem": "macOS 26 or later",
+        "image": "https://superbar.cc/assets/img/icon-512.png",
+        "screenshot": [
+          "https://superbar.cc/assets/img/bar-light.png",
+          "https://superbar.cc/assets/img/start-menu-light.png",
+          "https://superbar.cc/assets/img/preview-light.png",
+          "https://superbar.cc/assets/img/settings-snap-light.png"
+        ],
+        "featureList": [
+          "Start menu with search as you type",
+          "One button per app with live window previews",
+          "Window snapping to halves, quarters, and thirds",
+          "Always show, auto-hide, or always hide",
+          "System tray with Wi-Fi, sound, and battery",
+          "Clock with a month calendar",
+          "A bar on every connected display",
+          "Trash and Mission Control buttons"
+        ],
+        "publisher": { "@id": "https://superbar.cc/#org" }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://superbar.cc/#org",
+        "name": "Superbar",
+        "url": "https://superbar.cc/",
+        "logo": "https://superbar.cc/assets/img/icon-512.png",
+        "email": "hello@superbar.cc"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://superbar.cc/#site",
+        "name": "Superbar",
+        "url": "https://superbar.cc/",
+        "publisher": { "@id": "https://superbar.cc/#org" }
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I get a Windows-style taskbar on my Mac?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Install Superbar. It puts a taskbar along the bottom of every display, with a Start menu, one button per app, window previews, a system tray, and a clock, much like the taskbar on a PC."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Superbar replace the macOS Dock?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It can. In Settings, turn on Hide the macOS Dock: Superbar keeps the Dock hidden at the bottom with small icons, so minimized windows still shrink toward the bar. Restore Dock puts back every Dock setting exactly as it was."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I snap windows to half the screen on a Mac?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Superbar snaps the front window to fill the screen, a half, a quarter, or a third with Control-Option shortcuts, or from Snap Window when you right-click an app's button. Snapped windows stop at the top of the bar."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Superbar work with multiple monitors?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Every connected display gets its own bar with the same apps and window counts, and the Start menu and calendar open on the display you're using."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it show window previews like on Windows?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Rest the pointer on an app's button to see thumbnails of its windows, including minimized ones. Click a thumbnail to jump to that window, or close it from the preview."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which versions of macOS does Superbar support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Superbar runs on macOS 26 or later."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What permissions does Superbar need?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Accessibility, to list and manage windows. Screen Recording is optional and only draws preview thumbnails. Automation lets the Start menu restart or shut down your Mac and open Finder's Trash. Superbar keeps working without each one."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "When can I get Superbar?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Superbar is coming soon. Email hello@superbar.cc to get early access."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -35,6 +178,7 @@
         <a href="#snapping">Snapping</a>
         <a href="#tray">Tray</a>
         <a href="#permissions">Privacy</a>
+        <a href="#faq">FAQ</a>
         <a class="nav-cta" href="#install">Early access</a>
       </nav>
     </div>
@@ -44,9 +188,8 @@
     <section class="hero" id="top">
       <div class="wrap">
         <img class="hero-icon" src="assets/img/icon-512.png" alt="Superbar app icon: a glowing blue orb above a small bar" width="112" height="112">
-        <h1>Superbar</h1>
-        <p class="hero-sub">The taskbar your Mac never had.</p>
-        <p class="hero-lede">A Start menu that searches as you type, one button per app with window previews, snapping, a tray, and a clock. Along the bottom of every display.</p>
+        <h1>Superbar <span class="hero-sub">The taskbar your Mac never had.</span></h1>
+        <p class="hero-lede">A Windows-style taskbar for macOS: a Start menu that searches as you type, one button per app with window previews, snapping, a tray, and a clock. Along the bottom of every display.</p>
         <div class="ctas">
           <a class="btn" href="#install">Get early access</a>
           <a class="more-link" href="#start">See the features</a>
@@ -54,7 +197,7 @@
         </div>
       </div>
       <figure class="hero-shot">
-        <picture><source srcset="assets/img/bar-apps-light.png" media="(max-width: 600px) and (prefers-color-scheme: light)"><source srcset="assets/img/bar-apps-dark.png" media="(max-width: 600px)"><source srcset="assets/img/bar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-dark.png" alt="The Superbar bar: Start orb, Mission Control, buttons for Finder, Safari, Mail, Notes, Music, and Terminal, then Trash, Wi-Fi, sound, battery, and the clock" width="2880" height="80"></picture>
+        <picture><source srcset="assets/img/bar-apps-light.png" media="(max-width: 600px) and (prefers-color-scheme: light)"><source srcset="assets/img/bar-apps-dark.png" media="(max-width: 600px)"><source srcset="assets/img/bar-light.png" media="(prefers-color-scheme: light)"><img src="assets/img/bar-dark.png" fetchpriority="high" alt="The Superbar taskbar on a Mac: Start orb, Mission Control, buttons for Finder, Safari, Mail, Notes, Music, and Terminal, then Trash, Wi-Fi, sound, battery, and the clock" width="2880" height="80"></picture>
         <figcaption>Every picture on this page is a real screenshot of Superbar.</figcaption>
       </figure>
     </section>
@@ -277,6 +420,49 @@
         </figure>
       </div>
     </section>
+    <section class="band alt" id="faq" aria-labelledby="faq-title">
+      <div class="wrap">
+        <header class="band-head">
+          <p class="eyebrow">FAQ</p>
+          <h2 id="faq-title">Questions, answered.</h2>
+        </header>
+        <div class="faq">
+          <details class="faq-item">
+            <summary>How do I get a Windows-style taskbar on my Mac?</summary>
+            <p>Install Superbar. It puts a taskbar along the bottom of every display, with a Start menu, one button per app, window previews, a system tray, and a clock, much like the taskbar on a PC.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does Superbar replace the macOS Dock?</summary>
+            <p>It can. In Settings, turn on Hide the macOS Dock: Superbar keeps the Dock hidden at the bottom with small icons, so minimized windows still shrink toward the bar. Restore Dock puts back every Dock setting exactly as it was.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can I snap windows to half the screen on a Mac?</summary>
+            <p>Yes. Superbar snaps the front window to fill the screen, a half, a quarter, or a third with Control-Option shortcuts, or from Snap Window when you right-click an app&#x27;s button. Snapped windows stop at the top of the bar.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does Superbar work with multiple monitors?</summary>
+            <p>Yes. Every connected display gets its own bar with the same apps and window counts, and the Start menu and calendar open on the display you&#x27;re using.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does it show window previews like on Windows?</summary>
+            <p>Yes. Rest the pointer on an app&#x27;s button to see thumbnails of its windows, including minimized ones. Click a thumbnail to jump to that window, or close it from the preview.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Which versions of macOS does Superbar support?</summary>
+            <p>Superbar runs on macOS 26 or later.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What permissions does Superbar need?</summary>
+            <p>Accessibility, to list and manage windows. Screen Recording is optional and only draws preview thumbnails. Automation lets the Start menu restart or shut down your Mac and open Finder&#x27;s Trash. Superbar keeps working without each one.</p>
+          </details>
+          <details class="faq-item">
+            <summary>When can I get Superbar?</summary>
+            <p>Superbar is coming soon. Email <a href="mailto:hello@superbar.cc">hello@superbar.cc</a> to get early access.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <section class="band" id="install" aria-labelledby="install-title">
       <div class="wrap">
         <header class="band-head">
