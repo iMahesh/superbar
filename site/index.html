@@ -1,12 +1,41 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-T5NTJXW6"></script>
   <script>
+    // Consent first. Google tags start denied, and Microsoft Clarity loads only after
+    // the visitor accepts in the cookie banner (assets/consent.js). The choice is kept
+    // in localStorage under "superbar-consent": "granted" or "denied".
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
+      analytics_storage: 'denied', wait_for_update: 500
+    });
+    window.superbarConsent = (function () {
+      try { return localStorage.getItem('superbar-consent'); } catch (e) { return null; }
+    })();
+    if (window.superbarConsent === 'granted') {
+      gtag('consent', 'update', {
+        ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted',
+        analytics_storage: 'granted'
+      });
+    }
     gtag('js', new Date());
+
+    // Microsoft Clarity, only with consent.
+    window.loadClarity = function () {
+      if (window.clarityLoaded) return;
+      window.clarityLoaded = true;
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "z9kiufjqvu");
+      window.clarity('consentv2', { ad_Storage: 'granted', analytics_Storage: 'granted' });
+    };
+    if (window.superbarConsent === 'granted') window.loadClarity();
   </script>
+  <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-T5NTJXW6"></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Superbar: Windows-Style Taskbar for Mac | Dock Alternative</title>
@@ -480,7 +509,7 @@
 
   <footer class="footer">
     <div class="wrap">
-      <p class="contact">Questions or feedback? <a href="mailto:hello@superbar.cc">hello@superbar.cc</a></p>
+      <p class="contact">Questions or feedback? <a href="mailto:hello@superbar.cc">hello@superbar.cc</a> · <button type="button" class="link-button" id="consent-settings">Cookie settings</button></p>
       <p>Screenshots come from Superbar’s snapshot mode, with sample apps and windows, and follow your light or dark setting.</p>
       <p>Superbar is an independent project, not affiliated with Apple or Microsoft. Mac and macOS are trademarks of Apple Inc.</p>
     </div>
@@ -495,6 +524,16 @@
     <symbol id="i-display" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="12.5" rx="1.8"/><path d="M9 20.5h6M12 16.5v4"/></symbol>
   </svg>
 
+  <div class="consent" id="consent" role="dialog" aria-modal="false" aria-labelledby="consent-title" aria-describedby="consent-text" hidden>
+    <p class="consent-title" id="consent-title">Cookies on superbar.cc</p>
+    <p class="consent-text" id="consent-text">With your OK, we use cookies and similar tools, including Google Tag Manager and Microsoft Clarity, to see how the site is used and make it better. Clarity records clicks, scrolling, and page sessions. Until you accept, Clarity doesn’t load and Google’s tags don’t set cookies. Change your choice any time under Cookie settings at the bottom of the page.</p>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn ghost" id="consent-decline">Decline</button>
+      <button type="button" class="consent-btn" id="consent-accept">Accept</button>
+    </div>
+  </div>
+
+  <script src="assets/consent.js" defer></script>
   <script src="assets/app.js" defer></script>
 </body>
 </html>

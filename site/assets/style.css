@@ -161,6 +161,19 @@ h1, h2, .hero-sub, .lede, .hero-lede { text-wrap: balance; }
 .faq-item[open] summary::after { content: "−"; }
 .faq-item p { margin: 0 0 22px; color: var(--muted); font-size: 17px; }
 
+/* Cookie consent */
+.consent { position: fixed; z-index: 100; left: 50%; bottom: 20px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(0, 0, 0, .18); padding: 20px 22px; text-align: left; }
+.consent-title { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+.consent-text { margin: 0 0 16px; font-size: 14px; line-height: 1.43; color: var(--muted); letter-spacing: -.01em; }
+.consent-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.consent-btn { border: 0; border-radius: 980px; padding: 8px 20px; font-size: 14px; cursor: pointer; background: var(--btn); color: #fff; }
+.consent-btn:hover { background: var(--btn-hover); }
+.consent-btn.ghost { background: var(--bg-alt); color: var(--text); }
+.consent-btn.ghost:hover { background: var(--line); }
+.link-button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
+.link-button:hover { text-decoration: underline; }
+@media (max-width: 480px) { .consent-actions .consent-btn { flex: 1; } }
+
 /* Footer */
 .footer { background: var(--bg-alt); border-top: 1px solid var(--line); padding: 24px 0 40px; }
 .footer .contact { font-size: 14px; color: var(--text); margin-bottom: 14px; }
