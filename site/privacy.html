@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Statement — Superbar</title>
+  <meta name="description" content="How superbar.cc uses Google Tag Manager and Microsoft Clarity, which cookies they set, and how to change your choice.">
+  <link rel="canonical" href="https://superbar.cc/privacy.html">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="assets/img/favicon-64.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    // This page loads no trackers. It only reads the stored choice so the banner
+    // below can show it and let the visitor change it.
+    window.superbarConsent = (function () {
+      try { return localStorage.getItem('superbar-consent'); } catch (e) { return null; }
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="./" aria-label="Superbar home">
+        <img src="assets/img/favicon-64.png" alt="" width="20" height="20">
+        <span>Superbar</span>
+      </a>
+      <nav aria-label="Site">
+        <a href="./#faq">FAQ</a>
+        <a class="nav-cta" href="./#install">Early access</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="legal">
+    <div class="wrap">
+      <header class="legal-head">
+        <p class="eyebrow">Privacy</p>
+        <h1>Privacy Statement</h1>
+        <p class="legal-date">Effective November 6, 2026</p>
+      </header>
+
+      <p>This statement explains what happens to your information when you visit superbar.cc and when you email us. Questions are welcome at <a href="mailto:hello@superbar.cc">hello@superbar.cc</a>.</p>
+
+      <h2>Your choice comes first</h2>
+      <p>When you first visit, a banner asks whether you accept cookies and similar tracking tools. Until you choose Accept, Microsoft Clarity doesn’t load, and Google’s tags run in a mode that sets no cookies. If you choose Decline, that stays the case. You can change your choice at any time:</p>
+      <p><button type="button" class="consent-btn" id="consent-settings">Cookie settings</button> <span class="legal-current" id="consent-current"></span></p>
+
+      <h2>Microsoft Clarity</h2>
+      <p>If you accept, we partner with Microsoft Clarity to see how you use and interact with our website, through behavioral metrics, heatmaps, and session replay. This shows us where people click, how far they scroll, and where a page is confusing, so we can make the site better. Clarity captures website usage data with first- and third-party cookies and other tracking technologies. We and Microsoft collect and use this data. We don’t use it for advertising, but Microsoft may use it as its own privacy statement describes.</p>
+      <p>For more about how Microsoft collects and uses your data, see the <a href="https://www.microsoft.com/privacy/privacystatement">Microsoft Privacy Statement</a>.</p>
+
+      <h2>Google Tag Manager</h2>
+      <p>We use Google Tag Manager to manage measurement tags on this site. Until you accept, Google’s tags run in consent mode with storage denied, so they don’t set analytics or advertising cookies. If you accept, they may set cookies to count visits and see which pages are popular. See <a href="https://policies.google.com/privacy">Google’s Privacy Policy</a> and <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from sites that use its services</a>.</p>
+
+      <h2>Cookies and storage</h2>
+      <table class="legal-table">
+        <thead><tr><th>Name</th><th>Set by</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>superbar-consent</code></td><td>superbar.cc (browser storage, not a cookie)</td><td>Remembers whether you chose Accept or Decline</td></tr>
+          <tr><td><code>_clck</code>, <code>_clsk</code></td><td>Microsoft Clarity, only after Accept</td><td>Keep a Clarity user ID and join page views into one session</td></tr>
+          <tr><td><code>MUID</code> and other Microsoft cookies</td><td>Microsoft, only after Accept</td><td>Identify a browser across Microsoft sites</td></tr>
+          <tr><td>Google cookies such as <code>_ga</code></td><td>Google, only after Accept</td><td>Count visits and tell visitors apart</td></tr>
+        </tbody>
+      </table>
+      <p>You can also block or delete cookies in your browser’s settings.</p>
+
+      <h2>Hosting</h2>
+      <p>superbar.cc is hosted on GitHub Pages. GitHub may log technical information, such as your IP address, to run and secure the service. See the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub General Privacy Statement</a>.</p>
+
+      <h2>Email</h2>
+      <p>If you email <a href="mailto:hello@superbar.cc">hello@superbar.cc</a>, for example to get early access, we use your address and message to reply and to tell you when Superbar is available. We don’t sell it or share it for marketing. Ask us at any time and we’ll delete it.</p>
+
+      <h2>The Superbar app</h2>
+      <p>This statement covers the website. The Superbar app keeps its settings on your Mac and doesn’t send them to us.</p>
+
+      <h2>Your rights</h2>
+      <p>Depending on where you live, you may have the right to access, correct, or delete your personal data, or to object to how it’s used. Email <a href="mailto:hello@superbar.cc">hello@superbar.cc</a> and we’ll help. For data held by Microsoft or Google, you can also use the links above.</p>
+
+      <h2>Changes</h2>
+      <p>If this statement changes, we’ll update it here and change the date at the top.</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p class="contact">Questions or feedback? <a href="mailto:hello@superbar.cc">hello@superbar.cc</a> · <a href="./">Home</a></p>
+      <p>Superbar is an independent project, not affiliated with Apple or Microsoft. Mac and macOS are trademarks of Apple Inc.</p>
+    </div>
+  </footer>
+
+  <div class="consent" id="consent" role="dialog" aria-modal="false" aria-labelledby="consent-title" aria-describedby="consent-text" hidden>
+    <p class="consent-title" id="consent-title">Cookies on superbar.cc</p>
+    <p class="consent-text" id="consent-text">If you accept, we and Microsoft collect and use data about how you use this site, through Microsoft Clarity and Google Tag Manager, to make it better. Clarity records clicks, scrolling, and page sessions. Until you accept, Clarity doesn’t load and Google’s tags don’t set cookies. <a href="privacy.html">Privacy Statement</a></p>
+    <div class="consent-actions">
+      <button type="button" class="consent-btn ghost" id="consent-decline">Decline</button>
+      <button type="button" class="consent-btn" id="consent-accept">Accept</button>
+    </div>
+  </div>
+  <script src="assets/consent.js" defer></script>
+</body>
+</html>

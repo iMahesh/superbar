@@ -9,6 +9,13 @@
 
   const save = value => { try { localStorage.setItem(KEY, value); } catch (e) { /* private mode: ask again next visit */ } };
   const all = state => ({ ad_storage: state, ad_user_data: state, ad_personalization: state, analytics_storage: state });
+  const current = document.getElementById('consent-current');
+  const describe = () => {
+    if (!current) return;
+    current.textContent = window.superbarConsent === 'granted' ? 'You accepted.'
+      : window.superbarConsent === 'denied' ? 'You declined.' : 'You haven’t chosen yet.';
+  };
+  describe();
   const show = () => { banner.hidden = false; document.getElementById('consent-accept').focus({ preventScroll: true }); };
   const hide = () => { banner.hidden = true; };
 
@@ -18,6 +25,7 @@
     window.gtag && window.gtag('consent', 'update', all('granted'));
     window.loadClarity && window.loadClarity();
     hide();
+    describe();
   });
 
   document.getElementById('consent-decline').addEventListener('click', () => {
@@ -30,6 +38,7 @@
       window.clarity('consent', false);
     }
     hide();
+    describe();
   });
 
   banner.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
